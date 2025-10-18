@@ -48,7 +48,7 @@
                 {
                     "icon": "search",
                     "id": "CustomButton",
-                    "leftClickExec": "qs -p \"/usr/share/zirconium/noctalia-shell\" ipc call launcher toggle",
+                    "leftClickExec": "qs -p \"/usr/share/bazzite-niri/noctalia-shell\" ipc call launcher toggle",
                     "middleClickExec": "",
                     "rightClickExec": "",
                     "textCommand": "",
@@ -257,7 +257,7 @@
         "tooltipsEnabled": true
     },
     "wallpaper": {
-        "defaultWallpaper": "/usr/share/zirconium/noctalia-shell/Assets/Wallpaper/noctalia.png",
+        "defaultWallpaper": "/usr/share/bazzite-niri/noctalia-shell/Assets/Wallpaper/noctalia.png",
         "directory": "~/Pictures/Wallpapers",
         "enableMultiMonitorDirectories": false,
         "enabled": true,
