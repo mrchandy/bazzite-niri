@@ -69,7 +69,6 @@ dnf -y install \
 #install flatpak greetd just naut pipewire lots of tools and stuff FROM zirconium/build_files/01-theme.sh
 dnf -y install \
     brightnessctl \
-    chezmoi \
     ddcutil \
     fastfetch \
     flatpak \
@@ -91,7 +90,7 @@ dnf -y install \
     xdg-desktop-portal-gnome \
     xdg-user-dirs \
     xwayland-satellite \
-    cava \
+    cava
 
 
 #set up alias' for fastfetch and glorpfetch
@@ -203,15 +202,15 @@ ln -s /usr/share/bazzite-niri/skel/Pictures/Wallpapers/ublue.png /etc/skel/Pictu
 
 
 #enable systemd services sway/noctalia/etc
-systemctl enable --global chezmoi-init.service
-systemctl enable --global chezmoi-update.timer
+#systemctl enable --global chezmoi-init.service
+#systemctl enable --global chezmoi-update.timer
 systemctl enable --global noctalia.service
 systemctl enable --global plasma-polkit-agent.service
 systemctl enable --global swayidle.service
 systemctl enable --global udiskie.service
 systemctl enable --global xwayland-satellite.service
-systemctl preset --global chezmoi-init
-systemctl preset --global chezmoi-update
+#systemctl preset --global chezmoi-init
+#systemctl preset --global chezmoi-update
 systemctl preset --global noctalia
 systemctl preset --global plasma-polkit-agent
 systemctl preset --global swayidle
