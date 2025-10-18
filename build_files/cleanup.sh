@@ -3,7 +3,6 @@
 HOME_URL="https://github.com/mrchandy/bazzite-niri"
 echo "fedora" | tee "/etc/hostname"
 # OS Release File (changed in order with upstream)
-# TODO: change ANSI_COLOR
 sed -i -f - /usr/lib/os-release <<EOF
 s|^NAME=.*|NAME=\"Fedora\"|
 s|^PRETTY_NAME=.*|PRETTY_NAME=\"Fedora\"|
