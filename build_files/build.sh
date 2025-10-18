@@ -146,15 +146,15 @@ dnf -y install --enablerepo=fedora-multimedia \
 
 
 #emoji and fonts FROM zirconium/build_files/01-theme.sh
-dnf install -y \
-    default-fonts-core-emoji \
-    google-noto-fonts-all \
-    google-noto-color-emoji-fonts \
-    google-noto-emoji-fonts \
-    glibc-all-langpacks \
-    inter-font \
-    roboto-fontface-common \
-    roboto-fontface-fonts 
+#dnf install -y \
+#    default-fonts-core-emoji \
+#    google-noto-fonts-all \
+#    google-noto-color-emoji-fonts \
+#    google-noto-emoji-fonts \
+#    glibc-all-langpacks \
+#    inter-font \
+#    roboto-fontface-common \
+#    roboto-fontface-fonts
 
 
 #bootc update service/timer adjustments FROM zirconium/build_files/00-base.sh
