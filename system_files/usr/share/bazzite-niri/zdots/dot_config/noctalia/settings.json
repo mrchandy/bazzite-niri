@@ -257,7 +257,7 @@
         "tooltipsEnabled": true
     },
     "wallpaper": {
-        "defaultWallpaper": "/usr/share/bazzite-niri/noctalia-shell/Assets/Wallpaper/noctalia.png",
+        "defaultWallpaper": "/usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png",
         "directory": "~/Pictures/Wallpapers",
         "enableMultiMonitorDirectories": false,
         "enabled": true,

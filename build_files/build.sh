@@ -93,11 +93,6 @@ dnf -y install \
     cava
 
 
-#set up alias' for fastfetch and glorpfetch
-alias fastfetch="/usr/bin/fastfetch -c /usr/share/fastfetch/presets/config.jsonc"
-alias glorpfetch="/usr/bin/fastfetch -c /usr/share/fastfetch/presets/glorpfetch.jsonc"
-
-
 #enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
 systemctl enable greetd
 systemctl enable firewalld
@@ -195,7 +190,7 @@ systemctl enable uupd.timer
 #copies /usr and /etc for custom configs
 cp -avf "/ctx/files"/. /
 mkdir -p /etc/skel/Pictures/Wallpapers
-ln -s /usr/share/bazzite-niri/skel/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/Wallpapers/ublue.png
+ln -s /usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/Wallpapers/ublue.png
 #ln -s /usr/share/bazzite-niri/skel/.face /etc/skel/.face
 #file /etc/skel/.face | grep -F -e "empty" -v
 #file /etc/skel/Pictures/Wallpapers/* | grep -F -e "empty" -v
