@@ -190,7 +190,7 @@ dnf -y --enablerepo copr:copr.fedorainfracloud.org:ublue-os:packages install \
 dnf -y copr disable ublue-os/packages
 systemctl enable brew-setup.service
 systemctl enable uupd.timer
-systemctl enable io.github.kolunmi.Bazaar.service
+#systemctl enable io.github.kolunmi.Bazaar.service
 
 
 #copies /usr and /etc for custom configs
