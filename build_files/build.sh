@@ -54,6 +54,8 @@ dnf -y install \
     ddcutil \
     nautilus \
     wlsunset \
+    greetd \
+    greetd-selinux \
     xdg-user-dirs
 
 
