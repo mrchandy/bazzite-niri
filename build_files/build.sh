@@ -23,11 +23,10 @@ systemctl enable tailscaled
 
 
 #install niri quickshell dank material shell & dms-greeter ghostty
-dnf -y copr enable \
-    yalter/niri \
-    errornointernet/quickshell \
-    scottames/ghostty \
-    avengemedia/dms
+dnf -y copr enable yalter/niri
+dnf -y copr enable errornointernet/quickshell
+dnf -y copr enable avengemedia/dms
+dnf -y copr enable scottames/ghostty
 
 dnf -y install \
     niri \
@@ -35,11 +34,10 @@ dnf -y install \
     dms-greeter \
     ghostty
 
-dnf -y copr disable \
-    yalter/niri \
-    errornointernet/quickshell \
-    scottames/ghostty \
-    avengemedia/dms
+dnf -y copr disable yalter/niri
+dnf -y copr disable errornointernet/quickshell
+dnf -y copr disable avengemedia/dms
+dnf -y copr disable scottames/ghostty
 
 
 #install network/net-firmware/firewalld FROM zirconium/build_files/00-base.sh
@@ -79,7 +77,6 @@ dnf -y install \
     flatpak \
     fpaste \
     fzf \
-    git-core \
     gnome-keyring \
     greetd \
     greetd-selinux \
