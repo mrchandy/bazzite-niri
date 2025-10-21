@@ -60,12 +60,12 @@ dnf -y install \
 #create greeter user mkdir and chown that dir
 groupadd -r greeter
 useradd -r -g greeter -d /var/lib/greeter -s /bin/bash -c "System Greeter" greeter
-mkdir -p /var/lib/greeter
+mkdir /var/lib/greeter
 chown greeter:greeter /var/lib/greeter
 
 # clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
 git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
-mkdir -p /usr/local/bin/dms-greeter
+mkdir /usr/local/bin/dms-greeter
 cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/local/bin/dms-greeter
 chmod +x /usr/local/bin/dms-greeter
 mkdir -p /var/cache/dms-greeter
