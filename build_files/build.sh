@@ -31,7 +31,6 @@ dnf -y copr enable scottames/ghostty
 dnf -y install \
     niri \
     dms \
-    dms-greeter \
     ghostty
 
 dnf -y copr disable yalter/niri
@@ -42,56 +41,35 @@ dnf -y copr disable scottames/ghostty
 
 #install network/net-firmware/firewalld FROM zirconium/build_files/00-base.sh
 dnf -y install \
-    NetworkManager-wifi \
-    atheros-firmware \
-    brcmfmac-firmware \
-    iwlegacy-firmware \
-    iwlwifi-dvm-firmware \
-    iwlwifi-mvm-firmware \
-    mt7xxx-firmware \
-    nxpwireless-firmware \
-    libcamera{,-{v4l2,gstreamer,tools}} \
-    realtek-firmware \
-    tiwilink-firmware \
-    firewalld \
-    fwupd \
-    whois \
-    unzip \
     rclone \
-    fuse \
-    fuse-common \
     uxplay \
     btop \
-    plymouth \
-    plymouth-system-theme \
     fastfetch \
     fish \
-    podman \
     udiskie
 
 
 #install flatpak greetd just naut pipewire lots of tools and stuff FROM zirconium/build_files/01-theme.sh
 dnf -y install \
     ddcutil \
-    fastfetch \
-    flatpak \
-    fpaste \
-    fzf \
-    gnome-keyring \
-    greetd \
-    greetd-selinux \
-    just \
     nautilus \
-    orca \
-    pipewire \
-    tuigreet \
-    udiskie \
-    wireplumber \
-    wl-clipboard \
     wlsunset \
-    xdg-desktop-portal-gnome \
-    xdg-user-dirs \
-    xwayland-satellite
+    xdg-user-dirs
+
+
+#create greeter user mkdir and chown that dir
+groupadd -r greeter
+useradd -r -g greeter -d /var/lib/greeter -s /bin/bash -c "System Greeter" greeter
+mkdir -p /var/lib/greeter
+chown greeter:greeter /var/lib/greeter
+
+# clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
+git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
+cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/local/bin/dms-greeter
+chmod +x /usr/local/bin/dms-greeter
+mkdir -p /var/cache/dms-greeter
+chown greeter:greeter /var/cache/dms-greeter
+chmod 750 /var/cache/dms-greeter
 
 
 #enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
@@ -119,10 +97,6 @@ cat /usr/lib/systemd/user/niri.service
 #cat /etc/pam.d/greetd
 
 
-#attempt to use the supplied greeter installer
-dms greeter install
-
-
 #QtQuick pugins and PolicyKit for KDE Desktop and systemd service, I presume this is necessary. FROM zirconium/build_files/01-theme.sh
 dnf install -y --setopt=install_weak_deps=False \
     kf6-kirigami \
@@ -136,24 +110,6 @@ sed -i "s/After=.*/After=graphical-session.target/" /usr/lib/systemd/user/plasma
 #dnf config-manager setopt fedora-multimedia.enabled=0
 dnf -y install --enablerepo=fedora-multimedia \
     ffmpeg libavcodec @multimedia gstreamer1-plugins-{bad-free,bad-free-libs,good,base} lame{,-libs} libjxl ffmpegthumbnailer
-
-
-# #Extracts colors from wallpapers # Note: noctalia says these are required dependacies, but zirc has gone without them so idk
-# dnf -y copr enable purian23/matugen
-# dnf -y copr disable purian23/matugen
-# dnf -y --enablerepo copr:copr.fedorainfracloud.org:puritan23/matugen install matugen
-
-
-#emoji and fonts FROM zirconium/build_files/01-theme.sh
-#dnf install -y \
-#    default-fonts-core-emoji \
-#    google-noto-fonts-all \
-#    google-noto-color-emoji-fonts \
-#    google-noto-emoji-fonts \
-#    glibc-all-langpacks \
-#    inter-font \
-#    roboto-fontface-common \
-#    roboto-fontface-fonts
 
 
 #bootc update service/timer adjustments FROM zirconium/build_files/00-base.sh
