@@ -56,8 +56,7 @@ dnf -y install \
     wlsunset \
     greetd \
     greetd-selinux \
-    xdg-user-dirs \
-    doubleconversion
+    xdg-user-dirs
 
 
 #enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
