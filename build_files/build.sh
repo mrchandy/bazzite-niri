@@ -57,39 +57,11 @@ dnf -y install \
     xdg-user-dirs
 
 
-#create greeter user mkdir and chown that dir
-groupadd -r greeter
-useradd -r -g greeter -d /var/lib/greeter -s /bin/bash -c "System Greeter" greeter
-mkdir /var/lib/greeter
-chown greeter:greeter /var/lib/greeter
-
-# clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
-git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
-cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
-chmod +x /usr/share/bazzite-niri/dms-greeter
-mkdir -p /var/cache/dms-greeter
-chown greeter:greeter /var/cache/dms-greeter
-chmod 750 /var/cache/dms-greeter
-
-
 #enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
 systemctl enable greetd
 systemctl enable firewalld
 systemctl enable podman.socket
 systemctl enable podman.service
-
-
-#sets function to edit systemd service files, then inserts wants niri.service FROM zirconium/build_files/01-theme.sh
-add_wants_niri() {
-    sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
-}
-#add_wants_niri noctalia.service
-add_wants_niri swayidle.service
-add_wants_niri dms.service
-add_wants_niri plasma-polkit-agent.service
-add_wants_niri udiskie.service
-add_wants_niri xwayland-satellite.service
-cat /usr/lib/systemd/user/niri.service
 
 
 #sets the gnome keyring to use greetd i presume? FROM zirconium/build_files/01-theme.sh
@@ -157,7 +129,7 @@ ln -s /usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/W
 #file /etc/skel/Pictures/Wallpapers/* | grep -F -e "empty" -v
 
 
-#enable systemd services dms/noctalia/etc
+#enable systemd services dms/noctalia/swayidle/etc
 #systemctl enable --global chezmoi-init.service
 #systemctl enable --global chezmoi-update.timer
 #systemctl enable --global noctalia.service
@@ -176,10 +148,44 @@ systemctl preset --global udiskie
 systemctl preset --global xwayland-satellite
 
 
+#sets function to edit systemd service files, then inserts wants niri.service FROM zirconium/build_files/01-theme.sh
+add_wants_niri() {
+    sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
+}
+#add_wants_niri noctalia.service
+add_wants_niri swayidle.service
+add_wants_niri dms.service
+add_wants_niri plasma-polkit-agent.service
+add_wants_niri udiskie.service
+add_wants_niri xwayland-satellite.service
+cat /usr/lib/systemd/user/niri.service
+
+
 #git clone noctalia-shell
 #git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
 #install -d /etc/niri/
+
+#copy niri config to its home
 cp -f /usr/share/bazzite-niri/zdots/dot_config/niri/config.kdl /etc/niri/config.kdl
+
+
+#create greeter user mkdir and chown that dir
+groupadd -r greeter
+useradd -r -g greeter -d /var/lib/greeter -s /bin/bash -c "System Greeter" greeter
+
+
+# clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
+git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
+mkdir -p /var/cache/dms-greeter
+chown greeter:greeter /var/cache/dms-greeter
+chmod 750 /var/cache/dms-greeter
+#copy dms-greeter to its home + give x
+cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
+chmod +x /usr/share/bazzite-niri/dms-greeter
+mkdir /var/lib/greeter
+chown greeter:greeter /var/lib/greeter
+
+
 #not sure if these are necessary or not don't look too important
 #file /etc/niri/config.kdl | grep -F -e "empty" -v
 #stat /etc/skel/.face /etc/skel/Pictures/Wallpapers/* /etc/niri/config.kdl
