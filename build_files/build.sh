@@ -65,9 +65,8 @@ chown greeter:greeter /var/lib/greeter
 
 # clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
 git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
-mkdir /usr/local/bin/dms-greeter
-cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/local/bin/dms-greeter
-chmod +x /usr/local/bin/dms-greeter
+cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
+chmod +x /usr/share/bazzite-niri/dms-greeter
 mkdir -p /var/cache/dms-greeter
 chown greeter:greeter /var/cache/dms-greeter
 chmod 750 /var/cache/dms-greeter
@@ -85,7 +84,7 @@ add_wants_niri() {
     sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
 }
 #add_wants_niri noctalia.service
-#add_wants_niri swayidle.service
+add_wants_niri swayidle.service
 add_wants_niri dms.service
 add_wants_niri plasma-polkit-agent.service
 add_wants_niri udiskie.service
@@ -162,7 +161,7 @@ ln -s /usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/W
 #systemctl enable --global chezmoi-init.service
 #systemctl enable --global chezmoi-update.timer
 #systemctl enable --global noctalia.service
-#systemctl enable --global swayidle.service
+systemctl enable --global swayidle.service
 systemctl enable --global dms.service
 systemctl enable --global plasma-polkit-agent.service
 systemctl enable --global udiskie.service
@@ -170,7 +169,7 @@ systemctl enable --global xwayland-satellite.service
 #systemctl preset --global chezmoi-init
 #systemctl preset --global chezmoi-update
 #systemctl preset --global noctalia
-#systemctl preset --global swayidle
+systemctl preset --global swayidle
 systemctl preset --global dms
 systemctl preset --global plasma-polkit-agent
 systemctl preset --global udiskie
@@ -178,8 +177,8 @@ systemctl preset --global xwayland-satellite
 
 
 #git clone noctalia-shell
-git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
-install -d /etc/niri/
+#git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
+#install -d /etc/niri/
 cp -f /usr/share/bazzite-niri/zdots/dot_config/niri/config.kdl /etc/niri/config.kdl
 #not sure if these are necessary or not don't look too important
 #file /etc/niri/config.kdl | grep -F -e "empty" -v

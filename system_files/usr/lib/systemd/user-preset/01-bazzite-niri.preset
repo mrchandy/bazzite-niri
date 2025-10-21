@@ -1,5 +1,5 @@
 #enable noctalia.service
-#enable swayidle.service
+enable swayidle.service
 #enable chezmoi-init.service
 #enable chezmoi-update.timer
 enable dms.service
