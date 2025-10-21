@@ -1,6 +1,7 @@
-enable noctalia.service
-enable xwayland-satellite.service
+#enable noctalia.service
+#enable swayidle.service
 #enable chezmoi-init.service
 #enable chezmoi-update.timer
+enable dms.service
+enable xwayland-satellite.service
 enable plasma-polkit-agent.service
-enable swayidle.service

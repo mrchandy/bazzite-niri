@@ -22,18 +22,24 @@ dnf -y install --enablerepo='tailscale-stable' tailscale
 systemctl enable tailscaled
 
 
-#install niri quickshell ghostty FROM zirconium/build_files/01-theme.sh
-dnf -y copr enable yalter/niri
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:yalter:niri install niri
-dnf -y copr disable yalter/niri
+#install niri quickshell dank material shell & dms-greeter ghostty
+dnf -y copr enable \
+    yalter/niri \
+    errornointernet/quickshell \
+    scottames/ghostty \
+    avengemedia/dms
 
-dnf -y copr enable errornointernet/quickshell
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:errornointernet:quickshell install quickshell
-dnf -y copr disable errornointernet/quickshell
+dnf -y install \
+    niri \
+    dms \
+    dms-greeter \
+    ghostty
 
-dnf -y copr enable scottames/ghostty
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:scottames:ghostty install ghostty
-dnf -y copr disable scottames/ghostty
+dnf -y copr disable \
+    yalter/niri \
+    errornointernet/quickshell \
+    scottames/ghostty \
+    avengemedia/dms
 
 
 #install network/net-firmware/firewalld FROM zirconium/build_files/00-base.sh
@@ -68,7 +74,6 @@ dnf -y install \
 
 #install flatpak greetd just naut pipewire lots of tools and stuff FROM zirconium/build_files/01-theme.sh
 dnf -y install \
-    brightnessctl \
     ddcutil \
     fastfetch \
     flatpak \
@@ -89,8 +94,7 @@ dnf -y install \
     wlsunset \
     xdg-desktop-portal-gnome \
     xdg-user-dirs \
-    xwayland-satellite \
-    cava
+    xwayland-satellite
 
 
 #enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
@@ -104,17 +108,22 @@ systemctl enable podman.service
 add_wants_niri() {
     sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
 }
-add_wants_niri noctalia.service
+#add_wants_niri noctalia.service
+#add_wants_niri swayidle.service
+add_wants_niri dms.service
 add_wants_niri plasma-polkit-agent.service
-add_wants_niri swayidle.service
 add_wants_niri udiskie.service
 add_wants_niri xwayland-satellite.service
 cat /usr/lib/systemd/user/niri.service
 
 
 #sets the gnome keyring to use greetd i presume? FROM zirconium/build_files/01-theme.sh
-sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
-cat /etc/pam.d/greetd
+#sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
+#cat /etc/pam.d/greetd
+
+
+#attempt to use the supplied greeter installer
+dms greeter install
 
 
 #QtQuick pugins and PolicyKit for KDE Desktop and systemd service, I presume this is necessary. FROM zirconium/build_files/01-theme.sh
@@ -133,7 +142,6 @@ dnf -y install --enablerepo=fedora-multimedia \
 
 
 # #Extracts colors from wallpapers # Note: noctalia says these are required dependacies, but zirc has gone without them so idk
-# also cliphist?
 # dnf -y copr enable purian23/matugen
 # dnf -y copr disable purian23/matugen
 # dnf -y --enablerepo copr:copr.fedorainfracloud.org:puritan23/matugen install matugen
@@ -196,19 +204,21 @@ ln -s /usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/W
 #file /etc/skel/Pictures/Wallpapers/* | grep -F -e "empty" -v
 
 
-#enable systemd services sway/noctalia/etc
+#enable systemd services dms/noctalia/etc
 #systemctl enable --global chezmoi-init.service
 #systemctl enable --global chezmoi-update.timer
-systemctl enable --global noctalia.service
+#systemctl enable --global noctalia.service
+#systemctl enable --global swayidle.service
+systemctl enable --global dms.service
 systemctl enable --global plasma-polkit-agent.service
-systemctl enable --global swayidle.service
 systemctl enable --global udiskie.service
 systemctl enable --global xwayland-satellite.service
 #systemctl preset --global chezmoi-init
 #systemctl preset --global chezmoi-update
-systemctl preset --global noctalia
+#systemctl preset --global noctalia
+#systemctl preset --global swayidle
+systemctl preset --global dms
 systemctl preset --global plasma-polkit-agent
-systemctl preset --global swayidle
 systemctl preset --global udiskie
 systemctl preset --global xwayland-satellite
 
