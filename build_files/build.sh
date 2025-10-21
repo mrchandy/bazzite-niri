@@ -65,6 +65,7 @@ chown greeter:greeter /var/lib/greeter
 
 # clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
 git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
+mkdir -p /usr/local/bin/dms-greeter
 cp /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/local/bin/dms-greeter
 chmod +x /usr/local/bin/dms-greeter
 mkdir -p /var/cache/dms-greeter
