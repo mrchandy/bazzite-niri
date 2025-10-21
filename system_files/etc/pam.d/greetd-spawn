@@ -1,4 +1,4 @@
-auth       include      greetd
+auth       include      greeter
 auth       required     pam_env.so conffile=/etc/greetd/greetd-spawn.pam_env.conf
-account    include      greetd
-session    include      greetd
+account    include      greeter
+session    include      greeter

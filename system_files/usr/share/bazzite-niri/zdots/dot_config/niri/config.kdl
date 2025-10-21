@@ -210,7 +210,7 @@ layout {
     // You can enable drop shadows for windows.
     shadow {
         // Uncomment the next line to enable shadows.
-        on
+        //on
  
         // By default, the shadow draws only around its window, and not behind it.
         // Uncomment this setting to make the shadow draw behind its window.
@@ -306,6 +306,13 @@ window-rule {
     geometry-corner-radius 6
     clip-to-geometry true
 }
+
+//Set Alacritty opacity to 0.75
+window-rule {
+    match app-id="Alacritty"
+    opacity 0.75
+    draw_border_with_background false
+}
  
 // Work around WezTerm's initial configure bug
 // by setting an empty default-column-width.
@@ -361,13 +368,23 @@ binds {
     Mod+Slash { show-hotkey-overlay; }
  
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+T hotkey-overlay-title="Open a Terminal: Flatpak Ptyxis" { spawn "flatpak""run"" app.devsuite.Ptyxis"; }
+    Mod+T hotkey-overlay-title="Open a Terminal: Alacritty" { spawn "alacritty"; }
     Ctrl+Shift+Escape hotkey-overlay-title="Open a Resource Usage Analyzer: Mission Center" { spawn "flatpak" "run" " io.missioncenter.MissionCenter"; }
-    Mod+D hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    //Mod+D hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
     Mod+E hotkey-overlay-title="Open File Manager" { spawn "nautilus"; }
-    Mod+Space hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
- 
+    //Mod+Space hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    //Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
+    
+    Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
+    Mod+BackSlash hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
+    Mod+M hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "toggle"; }
+    Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+    Mod+P hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "toggle"; }
+    //Mod+P hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
+    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
+    Mod+Delete hotkey-overlay-title="Power Menu" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
+    Mod+C hotkey-overlay-title="Control Center" { spawn "dms" "ipc" "call" "control-center" "toggle"; }
+
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
     // For example, this is a standard bind to toggle the screen reader (orca).
@@ -612,7 +629,7 @@ binds {
     Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
  
     // The quit action will show a confirmation dialog to avoid accidental exits.
-    Mod+Shift+E { quit; }
+    //Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
  
     // Powers off the monitors. To turn them back on, do any input like
@@ -630,5 +647,6 @@ debug {
 }
  
 switch-events {
-    lid-close { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
+    lid-close { spawn "dms" "ipc" "call" "lock" "lock" ; }
+    //lid-close { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
 }

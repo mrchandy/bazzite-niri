@@ -22,75 +22,41 @@ dnf -y install --enablerepo='tailscale-stable' tailscale
 systemctl enable tailscaled
 
 
-#install niri quickshell ghostty FROM zirconium/build_files/01-theme.sh
+#install niri quickshell dank material shell & dms-greeter ghostty
 dnf -y copr enable yalter/niri
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:yalter:niri install niri
-dnf -y copr disable yalter/niri
-
 dnf -y copr enable errornointernet/quickshell
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:errornointernet:quickshell install quickshell
-dnf -y copr disable errornointernet/quickshell
-
+dnf -y copr enable avengemedia/dms
 dnf -y copr enable scottames/ghostty
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:scottames:ghostty install ghostty
+
+dnf -y install \
+    niri \
+    dms \
+    ghostty
+
+dnf -y copr disable yalter/niri
+dnf -y copr disable errornointernet/quickshell
+dnf -y copr disable avengemedia/dms
 dnf -y copr disable scottames/ghostty
 
 
 #install network/net-firmware/firewalld FROM zirconium/build_files/00-base.sh
 dnf -y install \
-    NetworkManager-wifi \
-    atheros-firmware \
-    brcmfmac-firmware \
-    iwlegacy-firmware \
-    iwlwifi-dvm-firmware \
-    iwlwifi-mvm-firmware \
-    mt7xxx-firmware \
-    nxpwireless-firmware \
-    libcamera{,-{v4l2,gstreamer,tools}} \
-    realtek-firmware \
-    tiwilink-firmware \
-    firewalld \
-    fwupd \
-    whois \
-    unzip \
     rclone \
-    fuse \
-    fuse-common \
     uxplay \
     btop \
-    plymouth \
-    plymouth-system-theme \
     fastfetch \
     fish \
-    podman \
     udiskie
 
 
 #install flatpak greetd just naut pipewire lots of tools and stuff FROM zirconium/build_files/01-theme.sh
 dnf -y install \
-    brightnessctl \
     ddcutil \
-    fastfetch \
-    flatpak \
-    fpaste \
-    fzf \
-    git-core \
-    gnome-keyring \
+    nautilus \
+    wlsunset \
     greetd \
     greetd-selinux \
-    just \
-    nautilus \
-    orca \
-    pipewire \
-    tuigreet \
-    udiskie \
-    wireplumber \
-    wl-clipboard \
-    wlsunset \
-    xdg-desktop-portal-gnome \
-    xdg-user-dirs \
-    xwayland-satellite \
-    cava
+    xdg-user-dirs
 
 
 #enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
@@ -100,21 +66,9 @@ systemctl enable podman.socket
 systemctl enable podman.service
 
 
-#sets function to edit systemd service files, then inserts wants niri.service FROM zirconium/build_files/01-theme.sh
-add_wants_niri() {
-    sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
-}
-add_wants_niri noctalia.service
-add_wants_niri plasma-polkit-agent.service
-add_wants_niri swayidle.service
-add_wants_niri udiskie.service
-add_wants_niri xwayland-satellite.service
-cat /usr/lib/systemd/user/niri.service
-
-
 #sets the gnome keyring to use greetd i presume? FROM zirconium/build_files/01-theme.sh
-sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
-cat /etc/pam.d/greetd
+#sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
+#cat /etc/pam.d/greetd
 
 
 #QtQuick pugins and PolicyKit for KDE Desktop and systemd service, I presume this is necessary. FROM zirconium/build_files/01-theme.sh
@@ -130,25 +84,6 @@ sed -i "s/After=.*/After=graphical-session.target/" /usr/lib/systemd/user/plasma
 #dnf config-manager setopt fedora-multimedia.enabled=0
 dnf -y install --enablerepo=fedora-multimedia \
     ffmpeg libavcodec @multimedia gstreamer1-plugins-{bad-free,bad-free-libs,good,base} lame{,-libs} libjxl ffmpegthumbnailer
-
-
-# #Extracts colors from wallpapers # Note: noctalia says these are required dependacies, but zirc has gone without them so idk
-# also cliphist?
-# dnf -y copr enable purian23/matugen
-# dnf -y copr disable purian23/matugen
-# dnf -y --enablerepo copr:copr.fedorainfracloud.org:puritan23/matugen install matugen
-
-
-#emoji and fonts FROM zirconium/build_files/01-theme.sh
-#dnf install -y \
-#    default-fonts-core-emoji \
-#    google-noto-fonts-all \
-#    google-noto-color-emoji-fonts \
-#    google-noto-emoji-fonts \
-#    glibc-all-langpacks \
-#    inter-font \
-#    roboto-fontface-common \
-#    roboto-fontface-fonts
 
 
 #bootc update service/timer adjustments FROM zirconium/build_files/00-base.sh
@@ -196,27 +131,64 @@ ln -s /usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/W
 #file /etc/skel/Pictures/Wallpapers/* | grep -F -e "empty" -v
 
 
-#enable systemd services sway/noctalia/etc
+#enable systemd services dms/noctalia/swayidle/etc
 #systemctl enable --global chezmoi-init.service
 #systemctl enable --global chezmoi-update.timer
-systemctl enable --global noctalia.service
-systemctl enable --global plasma-polkit-agent.service
+#systemctl enable --global noctalia.service
 systemctl enable --global swayidle.service
+systemctl enable --global dms.service
+systemctl enable --global plasma-polkit-agent.service
 systemctl enable --global udiskie.service
 systemctl enable --global xwayland-satellite.service
 #systemctl preset --global chezmoi-init
 #systemctl preset --global chezmoi-update
-systemctl preset --global noctalia
-systemctl preset --global plasma-polkit-agent
+#systemctl preset --global noctalia
 systemctl preset --global swayidle
+systemctl preset --global dms
+systemctl preset --global plasma-polkit-agent
 systemctl preset --global udiskie
 systemctl preset --global xwayland-satellite
 
 
+#sets function to edit systemd service files, then inserts wants niri.service FROM zirconium/build_files/01-theme.sh
+add_wants_niri() {
+    sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
+}
+#add_wants_niri noctalia.service
+add_wants_niri swayidle.service
+add_wants_niri dms.service
+add_wants_niri plasma-polkit-agent.service
+add_wants_niri udiskie.service
+add_wants_niri xwayland-satellite.service
+cat /usr/lib/systemd/user/niri.service
+
+
 #git clone noctalia-shell
-git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
+#git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
+
+
+#copy niri config to its home
 install -d /etc/niri/
 cp -f /usr/share/bazzite-niri/zdots/dot_config/niri/config.kdl /etc/niri/config.kdl
+
+
+#create greeter user mkdir and chown that dir
+groupadd -r greeter
+useradd -r -g greeter -d /var/lib/greeter -s /bin/bash -c "System Greeter" greeter
+
+
+# clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
+git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
+mkdir -p /var/cache/dms-greeter
+chown greeter:greeter /var/cache/dms-greeter
+chmod 750 /var/cache/dms-greeter
+#copy dms-greeter to its home + give x
+cp -f /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
+chmod +x /usr/share/bazzite-niri/dms-greeter
+mkdir /var/lib/greeter
+chown greeter:greeter /var/lib/greeter
+
+
 #not sure if these are necessary or not don't look too important
 #file /etc/niri/config.kdl | grep -F -e "empty" -v
 #stat /etc/skel/.face /etc/skel/Pictures/Wallpapers/* /etc/niri/config.kdl
