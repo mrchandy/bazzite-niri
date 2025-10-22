@@ -31,6 +31,7 @@ dnf -y copr enable scottames/ghostty
 dnf -y install \
     niri \
     dms \
+    dms-greeter \
     ghostty
 
 dnf -y copr disable yalter/niri
@@ -58,17 +59,13 @@ dnf -y install \
     greetd-selinux \
     xdg-user-dirs
 
-
-#enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
-systemctl enable greetd
-systemctl enable firewalld
-systemctl enable podman.socket
-systemctl enable podman.service
+dnf -y remove \
+    waybar
 
 
 #sets the gnome keyring to use greetd i presume? FROM zirconium/build_files/01-theme.sh
-#sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
-#cat /etc/pam.d/greetd
+sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
+cat /etc/pam.d/greetd
 
 
 #QtQuick pugins and PolicyKit for KDE Desktop and systemd service, I presume this is necessary. FROM zirconium/build_files/01-theme.sh
@@ -148,6 +145,11 @@ systemctl preset --global dms
 systemctl preset --global plasma-polkit-agent
 systemctl preset --global udiskie
 systemctl preset --global xwayland-satellite
+#enables greetd and firewalld service FROM zirconium/build_files/01-theme.sh
+systemctl enable greetd
+systemctl enable firewalld
+systemctl enable podman.socket
+systemctl enable podman.service
 
 
 #sets function to edit systemd service files, then inserts wants niri.service FROM zirconium/build_files/01-theme.sh
@@ -172,21 +174,16 @@ install -d /etc/niri/
 cp -f /usr/share/bazzite-niri/zdots/dot_config/niri/config.kdl /etc/niri/config.kdl
 
 
-#create greeter user mkdir and chown that dir
-groupadd -r greeter
-useradd -r -g greeter -d /var/lib/greeter -s /bin/bash -c "System Greeter" greeter
-
-
 # clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
-git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
-mkdir -p /var/cache/dms-greeter
-chown greeter:greeter /var/cache/dms-greeter
-chmod 750 /var/cache/dms-greeter
+#git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
+#mkdir -p /var/cache/dms-greeter
+#chown greeter:greeter /var/cache/dms-greeter
+#chmod 750 /var/cache/dms-greeter
 #copy dms-greeter to its home + give x
-cp -f /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
-chmod +x /usr/share/bazzite-niri/dms-greeter
-mkdir /var/lib/greeter
-chown greeter:greeter /var/lib/greeter
+#cp -f /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
+#chmod +x /usr/share/bazzite-niri/dms-greeter
+#mkdir /var/lib/greeter
+#chown greeter:greeter /var/lib/greeter
 
 
 #not sure if these are necessary or not don't look too important
