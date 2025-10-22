@@ -172,18 +172,7 @@ cat /usr/lib/systemd/user/niri.service
 #copy niri config to its home
 install -d /etc/niri/
 cp -f /usr/share/bazzite-niri/zdots/dot_config/niri/config.kdl /etc/niri/config.kdl
-
-
-# clone DMS repo, cp the greeter to /usr/local/bin/dms-greeter then chmod and chown
-#git clone https://github.com/AvengeMedia/DankMaterialShell.git /etc/xdg/quickshell/dms-greeter
-#mkdir -p /var/cache/dms-greeter
-#chown greeter:greeter /var/cache/dms-greeter
-#chmod 750 /var/cache/dms-greeter
-#copy dms-greeter to its home + give x
-#cp -f /etc/xdg/quickshell/dms-greeter/Modules/Greetd/assets/dms-greeter /usr/share/bazzite-niri/dms-greeter
-#chmod +x /usr/share/bazzite-niri/dms-greeter
-#mkdir /var/lib/greeter
-#chown greeter:greeter /var/lib/greeter
+install -d -o greetd -m 750 /var/cache/dms-greeter
 
 
 #not sure if these are necessary or not don't look too important
