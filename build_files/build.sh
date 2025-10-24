@@ -26,14 +26,19 @@ systemctl enable tailscaled
 dnf -y copr enable yalter/niri
 dnf -y copr enable errornointernet/quickshell
 dnf -y copr enable scottames/ghostty
+dnf -y copr enable zirconium/packages
 
 dnf -y install \
     niri \
-    ghostty
+    quickshell \
+    ghostty \
+    matugen \
+    cliphist
 
 dnf -y copr disable yalter/niri
 dnf -y copr disable errornointernet/quickshell
 dnf -y copr disable scottames/ghostty
+dnf -y copr disable zirconium/packages
 
 
 #install network/net-firmware/firewalld FROM zirconium/build_files/00-base.sh
@@ -43,17 +48,29 @@ dnf -y install \
     btop \
     fastfetch \
     fish \
-    udiskie
-
+    udiskie \
+    cava 
+    
 
 #install flatpak greetd just naut pipewire lots of tools and stuff FROM zirconium/build_files/01-theme.sh
 dnf -y install \
     ddcutil \
+    brightnessctl \
     nautilus \
     wlsunset \
     greetd \
     greetd-selinux \
-    xdg-user-dirs
+    xdg-user-dirs \
+    xdg-desktop-portal
+
+
+#installing different fonts FROM zirconium/build_files/01-theme.sh
+dnf install -y \
+    default-fonts-core-emoji \
+    google-noto-color-emoji-fonts \
+    google-noto-emoji-fonts \
+    glibc-all-langpacks \
+    default-fonts
 
 
 #sets the gnome keyring to use greetd i presume? FROM zirconium/build_files/01-theme.sh
