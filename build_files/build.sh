@@ -32,7 +32,6 @@ dnf -y install \
     niri \
     quickshell \
     ghostty \
-    matugen \
     cliphist
 
 dnf -y copr disable yalter/niri
@@ -50,7 +49,7 @@ dnf -y install \
     fish \
     udiskie \
     cava 
-    
+
 
 #install flatpak greetd just naut pipewire lots of tools and stuff FROM zirconium/build_files/01-theme.sh
 dnf -y install \
