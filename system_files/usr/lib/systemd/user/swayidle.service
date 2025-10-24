@@ -4,7 +4,7 @@ PartOf=graphical-session.target
 After=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/swayidle -w timeout 601 'niri msg action power-off-monitors' timeout 600 'dms ipc call lock lock' before-sleep 'dms ipc call lock lock'
+ExecStart=/usr/bin/swayidle -w timeout 601 'niri msg action power-off-monitors' timeout 600 'qs -c /usr/share/bazzite-niri/noctalia-shell ipc call sessionMenu lockAndSuspend' before-sleep 'qs -c /usr/share/bazzite-niri/noctalia-shell ipc call sessionMenu lockAndSuspend'
 Restart=on-failure
 RestartSec=1
 

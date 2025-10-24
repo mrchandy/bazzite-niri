@@ -25,18 +25,14 @@ systemctl enable tailscaled
 #install niri quickshell dank material shell & dms-greeter ghostty
 dnf -y copr enable yalter/niri
 dnf -y copr enable errornointernet/quickshell
-dnf -y copr enable avengemedia/dms
 dnf -y copr enable scottames/ghostty
 
 dnf -y install \
     niri \
-    dms \
-    dms-greeter \
     ghostty
 
 dnf -y copr disable yalter/niri
 dnf -y copr disable errornointernet/quickshell
-dnf -y copr disable avengemedia/dms
 dnf -y copr disable scottames/ghostty
 
 
@@ -58,9 +54,6 @@ dnf -y install \
     greetd \
     greetd-selinux \
     xdg-user-dirs
-
-dnf -y remove \
-    waybar
 
 
 #sets the gnome keyring to use greetd i presume? FROM zirconium/build_files/01-theme.sh
@@ -131,17 +124,15 @@ ln -s /usr/share/bazzite-niri/Pictures/Wallpapers/ublue.png /etc/skel/Pictures/W
 #enable systemd services dms/noctalia/swayidle/etc
 #systemctl enable --global chezmoi-init.service
 #systemctl enable --global chezmoi-update.timer
-#systemctl enable --global noctalia.service
+systemctl enable --global noctalia.service
 systemctl enable --global swayidle.service
-systemctl enable --global dms.service
 systemctl enable --global plasma-polkit-agent.service
 systemctl enable --global udiskie.service
 systemctl enable --global xwayland-satellite.service
 #systemctl preset --global chezmoi-init
 #systemctl preset --global chezmoi-update
-#systemctl preset --global noctalia
+systemctl preset --global noctalia
 systemctl preset --global swayidle
-systemctl preset --global dms
 systemctl preset --global plasma-polkit-agent
 systemctl preset --global udiskie
 systemctl preset --global xwayland-satellite
@@ -156,9 +147,8 @@ systemctl enable podman.service
 add_wants_niri() {
     sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
 }
-#add_wants_niri noctalia.service
+add_wants_niri noctalia.service
 add_wants_niri swayidle.service
-add_wants_niri dms.service
 add_wants_niri plasma-polkit-agent.service
 add_wants_niri udiskie.service
 add_wants_niri xwayland-satellite.service
@@ -166,13 +156,16 @@ cat /usr/lib/systemd/user/niri.service
 
 
 #git clone noctalia-shell
-#git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
+git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzite-niri/noctalia-shell
+
+git clone "https://github.com/noctalia-dev/noctalia-greet.git" /usr/share/bazzite-niri/noctalia-greet
+cp -f /usr/share/bazzite-niri/zdots/dot_config/noctalia-greet/niri-noctalia.kdl /usr/share/bazzite-niri/noctalia-greet/Assets/niri-noctalia.kdl
+chmod +x /usr/share/bazzite-niri/noctalia-greet/Bin/greet-niri.sh
 
 
 #copy niri config to its home
 install -d /etc/niri/
 cp -f /usr/share/bazzite-niri/zdots/dot_config/niri/config.kdl /etc/niri/config.kdl
-install -d -o greetd -m 750 /var/cache/dms-greeter
 
 
 #not sure if these are necessary or not don't look too important

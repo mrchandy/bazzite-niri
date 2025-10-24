@@ -372,20 +372,13 @@ binds {
     
     Mod+T hotkey-overlay-title="Open a Terminal: Alacritty" { spawn "alacritty"; }
     Mod+E hotkey-overlay-title="Open File Manager" { spawn "nautilus"; }
-    Mod+Shift+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
-    Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
-    Mod+BackSlash hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
-    Mod+M hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "toggle"; }
-    Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
-    Mod+P hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "toggle"; }
-    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
-    Mod+Delete hotkey-overlay-title="Power Menu" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
-    
-    //Mod+D hotkey-overlay-title="Control Center" { spawn "dms" "ipc" "call" "control-center" "toggle"; }
-    //Ctrl+Shift+Escape hotkey-overlay-title="Open a Resource Usage Analyzer: Mission Center" { spawn "flatpak" "run" " io.missioncenter.MissionCenter"; }
-    //Mod+D hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
-    //Mod+Space hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
-    //Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
+    Ctrl+Shift+Escape hotkey-overlay-title="Open a Resource Usage Analyzer: Mission Center" { spawn "flatpak" "run" "io.missioncenter.MissionCenter"; }
+    Mod+Space hotkey-overlay-title="Run applications" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
+    Mod+N hotkey-overlay-title="Open the Notification Tray" { spawn "qs" "-c" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "notifications" "toggleHistory"; }
+    Mod+Del hotkey-overlay-title="Open the Session Menu" { spawn "qs" "-c" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "sessionMenu" "toggle"; }
+    Mod+P hotkey-overlay-title="Open the Settings Menu" { spawn "qs" "-c" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "settings" "toggle"; }
+
 
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
@@ -655,6 +648,5 @@ debug {
 }
  
 switch-events {
-    lid-close { spawn "dms" "ipc" "call" "lock" "lock" ; }
-    //lid-close { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
+    lid-close { spawn "qs" "-p" "/usr/share/bazzite-niri/noctalia-shell" "ipc" "call" "lockScreen" "toggle"; }
 }

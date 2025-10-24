@@ -5,5 +5,5 @@ service = "greetd-spawn"
 vt = 1
 
 [default_session]
-command = "/usr/bin/dms-greeter --command niri"
+command = "/usr/share/bazzite-niri/noctalia-greet/Bin/greet-niri.sh"
 user = "greetd"
