@@ -177,6 +177,7 @@ git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/bazzit
 git clone "https://github.com/noctalia-dev/noctalia-greet.git" /usr/share/bazzite-niri/noctalia-greet
 cp -f /usr/share/bazzite-niri/zdots/dot_config/noctalia-greet/niri-noctalia.kdl /usr/share/bazzite-niri/noctalia-greet/Assets/niri-noctalia.kdl
 chmod +x /usr/share/bazzite-niri/noctalia-greet/Bin/greet-niri.sh
+cp -R /usr/share/bazzite-niri/zdots/dot_config/noctalia-greet/noctalia /usr/share/bazzite-niri/noctalia-greet
 
 
 #copy niri config to its home
