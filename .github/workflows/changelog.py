@@ -10,15 +10,6 @@ REGISTRY = "docker://ghcr.io/ublue-os/"
 
 IMAGES = [
     "bazzite",
-    "bazzite-gnome",
-    # "bazzite-deck",
-    "bazzite-deck-gnome",
-    "bazzite-deck-nvidia",
-    "bazzite-deck-nvidia-gnome",
-    "bazzite-nvidia",
-    "bazzite-gnome-nvidia",
-    "bazzite-nvidia-open",
-    "bazzite-gnome-nvidia-open",
 ]
 
 RETRIES = 3
@@ -44,7 +35,7 @@ OTHER_NAMES = {
 COMMITS_FORMAT = (
     "### Commits\n| Hash | Subject | Author |\n| --- | --- | --- |{commits}\n\n"
 )
-COMMIT_FORMAT = "\n| **[{short}](https://github.com/ublue-os/bazzite/commit/{hash})** | {subject} | {author} |"
+COMMIT_FORMAT = "\n| **[{short}](https://github.com/mrchandy/bazzite-niri/commit/{hash})** | {subject} | {author} |"
 
 CHANGELOG_TITLE = "{tag}: {pretty}"
 CHANGELOG_FORMAT = """\
@@ -59,9 +50,7 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Firmware** | {pkgrel:atheros-firmware} |
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:gamescope} |
-| **Gnome** | {pkgrel:gnome-control-center-filesystem} |
-| **KDE** | {pkgrel:plasma-desktop} |
-| **[HHD](https://github.com/hhd-dev/hhd)** | {pkgrel:hhd} |
+| **Niri** | {pkgrel:plasma-desktop} |
 
 {changes}
 
@@ -81,8 +70,6 @@ BLACKLIST_VERSIONS = [
     "kernel",
     "mesa-filesystem",
     "gamescope",
-    "gnome-control-center-filesystem",
-    "plasma-desktop",
     "atheros-firmware",
 ]
 
