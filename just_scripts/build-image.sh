@@ -22,7 +22,7 @@ tag=$(just _tag "${image}")
 if [[ ${image} =~ "gnome" ]]; then
     base_image="silverblue"
 else
-    base_image="kinoite"
+    base_image="base"
 fi
 
 if [[ ${target} =~ "nvidia" ]]; then

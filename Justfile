@@ -1,7 +1,7 @@
 export project_root := `git rev-parse --show-toplevel`
 export git_branch := ` git branch --show-current`
-export latest := "41"
-export default_image := "niri"
+export latest := "43"
+export default_image := "base"
 export default_target := "bazzite"
 
 alias build-iso := build-iso-release

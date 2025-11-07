@@ -27,7 +27,7 @@
 #
 # https://github.com/ublue-os/image-template
 
-ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-niri}"
+ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME}"
 ARG FEDORA_VERSION="${FEDORA_VERSION:-43}"
 ARG ARCH="${ARCH:-x86_64}"
 
@@ -357,31 +357,13 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/cleanup
 
 
+#-------------------- Configure DE ------------------------------ 
+COPY ./build_files/install-niri.sh /ctx/
 
-
-#-------------------- Configure DE ------------------------------
-
-
-    # Configure KDE & GNOME
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=secret,id=GITHUB_TOKEN \
-    if grep -q "niri" <<< "${BASE_IMAGE_NAME}"; then \
-        dnf5 -y install \
-            ptyxis && \
-        dnf5 -y remove \
-                                    
-        sed -i '/<entry name="launchers" type="StringList">/,/<\/entry>/ s/<default>[^<]*<\/default>/<default>preferred:\/\/browser,applications:steam.desktop,applications:net.lutris.Lutris.desktop,applications:org.gnome.Ptyxis.desktop,applications:io.github.kolunmi.Bazaar.desktop,preferred:\/\/filemanager<\/default>/' /usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/config/main.xml && \
-        sed -i 's@\[Desktop Action new-window\]@\[Desktop Action new-window\]\nX-KDE-Shortcuts=Ctrl+Alt+T@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
-        sed -i '/^Comment/d' /usr/share/applications/org.gnome.Ptyxis.desktop && \
-        sed -i 's@Exec=ptyxis@Exec=kde-ptyxis@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
-        sed -i 's@Keywords=@Keywords=konsole;console;@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
-        cp /usr/share/applications/org.gnome.Ptyxis.desktop /usr/share/kglobalaccel/org.gnome.Ptyxis.desktop && \
-        setcap 'cap_net_raw+ep' /usr/libexec/ksysguard/ksgrd_network_helper && \
-        ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
-        ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
-        rm -f /usr/share/backgrounds/default.xml \
-    ; fi && \
+    /ctx/install-niri.sh && \
     /ctx/cleanup
 
 # ublue-os packages
@@ -404,6 +386,7 @@ RUN --mount=type=cache,dst=/var/cache \
 # Cleanup & Finalize
 COPY system_files/overrides /
 COPY ./build_files/finalize ./build_files/build-initramfs ./build_files/image-info ./build_files/dnf5-setopt ./build_files/dnf5-search /ctx/
+COPY ./build_files/enable-niri.sh /ctx/
 
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
@@ -441,27 +424,17 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/90-bazzite-picker.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/90-bazzite-de.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/91-bazzite-decky.just\"" >> /usr/share/ublue-os/justfile && \
-    if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
-      systemctl enable usr-share-sddm-themes.mount && \
-      mkdir -p "/usr/share/ublue-os/dconfs/desktop-kinoite/" && \
-      cp "/usr/share/glib-2.0/schemas/zz0-"*"-bazzite-desktop-kinoite-"*".gschema.override" "/usr/share/ublue-os/dconfs/desktop-kinoite/" && \
-      find "/etc/dconf/db/distro.d/" -maxdepth 1 -type f -exec cp {} "/usr/share/ublue-os/dconfs/desktop-kinoite/" \; && \
-      dconf-override-converter to-dconf "/usr/share/ublue-os/dconfs/desktop-kinoite/zz0-"*"-bazzite-desktop-kinoite-"*".gschema.override" && \
-      rm "/usr/share/ublue-os/dconfs/desktop-kinoite/zz0-"*"-bazzite-desktop-kinoite-"*".gschema.override" \
-    ; else \
-      mkdir -p "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
-      cp "/usr/share/glib-2.0/schemas/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
-      find "/etc/dconf/db/distro.d/" -maxdepth 1 -type f -exec cp {} "/usr/share/ublue-os/dconfs/desktop-silverblue/" \; && \
-      dconf-override-converter to-dconf "/usr/share/ublue-os/dconfs/desktop-silverblue/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" && \
-      sed -i 's/\[org.gtk.Settings.FileChooser\]/\[org\/gtk\/settings\/file-chooser\]/g; s/\[org.gtk.gtk4.Settings.FileChooser\]/\[org\/gtk\/gtk4\/settings\/file-chooser\]/g' "/usr/share/ublue-os/dconfs/desktop-silverblue/zz0-00-bazzite-desktop-silverblue-global" && \
-      rm "/usr/share/ublue-os/dconfs/desktop-silverblue/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" \
-    ; fi && \
-    mkdir -p /tmp/bazzite-schema-test && \
-    find "/usr/share/glib-2.0/schemas/" -type f ! -name "*.gschema.override" -exec cp {} "/tmp/bazzite-schema-test/" \; && \
-    cp "/usr/share/glib-2.0/schemas/zz0-"*".gschema.override" "/tmp/bazzite-schema-test/" && \
-    glib-compile-schemas --strict /tmp/bazzite-schema-test && \
-    glib-compile-schemas /usr/share/glib-2.0/schemas &>/dev/null && \
-    rm -r /tmp/bazzite-schema-test && \
+    
+    #------------------------ service enables for DE ------------------------
+    /ctx/enable-niri.sh && \
+
+
+    #mkdir -p /tmp/bazzite-schema-test && \
+    #find "/usr/share/glib-2.0/schemas/" -type f ! -name "*.gschema.override" -exec cp {} "/tmp/bazzite-schema-test/" \; && \
+    #cp "/usr/share/glib-2.0/schemas/zz0-"*".gschema.override" "/tmp/bazzite-schema-test/" && \
+    #glib-compile-schemas --strict /tmp/bazzite-schema-test && \
+    #glib-compile-schemas /usr/share/glib-2.0/schemas &>/dev/null && \
+    #rm -r /tmp/bazzite-schema-test && \
     sed -i 's/stage/none/g' /etc/rpm-ostreed.conf && \
     for repo in \
         fedora-cisco-openh264 \

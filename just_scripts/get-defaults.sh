@@ -12,10 +12,7 @@ elif [[ ${target} == "nvidia" ]]; then
 fi
 
 valid_images=(
-    silverblue
-    kinoite
-    gnome
-    kde
+    base
 )
 image=${image,,}
 if [[ ! ${valid_images[*]} =~ ${image} ]]; then
@@ -26,8 +23,6 @@ fi
 target=${target,,}
 valid_targets=(
     bazzite
-    bazzite-deck
-    bazzite-nvidia
 )
 if [[ ! ${valid_targets[*]} =~ ${target} ]]; then
     echo "Invalid target..."
