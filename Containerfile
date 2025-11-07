@@ -27,7 +27,7 @@
 #
 # https://github.com/ublue-os/image-template
 
-ARG BASE_IMAGE_NAME="base"
+ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME}"
 ARG FEDORA_VERSION="${FEDORA_VERSION:-43}"
 ARG ARCH="${ARCH:-x86_64}"
 
