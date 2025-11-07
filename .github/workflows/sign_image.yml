@@ -2,12 +2,12 @@ name: Sign Image
 
 # A workflow to sign an image on demand
 
-on:
-  workflow_dispatch:
-    inputs:
-      image:
-        description: 'Image to sign, including the tag'
-        required: true
+#on:
+#  workflow_dispatch:
+#    inputs:
+#      image:
+#        description: 'Image to sign, including the tag'
+#        required: true
 
 jobs:
   sign:

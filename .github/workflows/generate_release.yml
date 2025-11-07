@@ -1,11 +1,11 @@
-on:
-  workflow_call:
-  workflow_dispatch:
-    inputs:
-      handwritten:
-        description: 'Small changelog about changes in this build:'
-      target:
-        description: 'Release Branch (e.g., testing). Defaults to branch name.'
+#on:
+#  workflow_call:
+#  workflow_dispatch:
+#    inputs:
+#      handwritten:
+#        description: 'Small changelog about changes in this build:'
+#      target:
+#        description: 'Release Branch (e.g., testing). Defaults to branch name.'
 permissions:
   contents: write
 
