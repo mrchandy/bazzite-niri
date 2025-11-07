@@ -11,13 +11,13 @@ concurrency:
 permissions:
   packages: write
 
-#on:
-#  workflow_dispatch:
-#    inputs:
-#      old_tag:
-#        description: "Old tag from which images will be retagged to latest"
-#        required: true
-#        type: string
+on:
+  workflow_dispatch:
+    inputs:
+      old_tag:
+        description: "Old tag from which images will be retagged to latest"
+        required: true
+        type: string
 
 jobs:
   safeguard-timer:

@@ -1,43 +1,43 @@
 name: Build Bazzite
-#on:
-#  pull_request:
-#    branches:
-#      - testing
-#      - unstable
-#    paths-ignore:
-#      - "**.md"
-#      - "**.txt"
-#      - "installer/**"
-#      - "repo_content/**"
-#      - "spec_files/**"
-#      - "post_install_files/**"
-#      - "press_kit/**"
-#      - "docs/**"
-#      - ".github/workflows/build_iso*.yml"
-#  push:
-#    branches:
-#      - testing
-#      - unstable
-#    paths-ignore:
-#      - "**.md"
-#      - "**.txt"
-#      - "repo_content/**"
-#      - "spec_files/**"
-#      - "post_install_files/**"
-#      - "press_kit/**"
-#      - ".github/workflows/build_iso*.yml"
-#  merge_group:
-#  workflow_dispatch:
-#    inputs:
-#      handwritten:
-#        description: 'Small changelog:'
-#      # Run with this periodically to analyze the image again
-#      # As package drift will make the plan eventually non-ideal
-#      # (existing users will have to redownload most of the image)
-#      fresh-rechunk:
-#        description: 'Clear rechunk history'
-#        type: boolean
-#        default: false
+on:
+  #pull_request:
+  #  branches:
+  #    - testing
+  #    - unstable
+  #  paths-ignore:
+  #    - "**.md"
+  #    - "**.txt"
+  #    - "installer/**"
+  #    - "repo_content/**"
+  #    - "spec_files/**"
+  #    - "post_install_files/**"
+  #    - "press_kit/**"
+  #    - "docs/**"
+  #    - ".github/workflows/build_iso*.yml"
+  #push:
+  #  branches:
+  #    - testing
+  #    - unstable
+  #  paths-ignore:
+  #    - "**.md"
+  #    - "**.txt"
+  #    - "repo_content/**"
+  #    - "spec_files/**"
+  #    - "post_install_files/**"
+  #    - "press_kit/**"
+  #    - ".github/workflows/build_iso*.yml"
+  #merge_group:
+  workflow_dispatch:
+    inputs:
+      handwritten:
+        description: 'Small changelog:'
+      # Run with this periodically to analyze the image again
+      # As package drift will make the plan eventually non-ideal
+      # (existing users will have to redownload most of the image)
+      fresh-rechunk:
+        description: 'Clear rechunk history'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}

@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Build Live ISOs
 
-#on:
-#  workflow_dispatch:
+on:
+  workflow_dispatch:
 #  workflow_call:
 
 env:
