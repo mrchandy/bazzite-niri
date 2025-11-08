@@ -16,7 +16,7 @@ cat /usr/lib/systemd/user/niri.service
 systemctl enable greetd
 #systemctl enable flatpak-preinstall.service
 #systemctl enable --global chezmoi-init.service
-#systemctl enable --global app-com.mitchellh.ghostty.service
+systemctl enable --global app-com.mitchellh.ghostty.service
 #systemctl enable --global chezmoi-update.timer
 systemctl enable --global dms.service
 systemctl enable --global cliphist.service
@@ -26,7 +26,7 @@ systemctl enable --global plasma-polkit-agent.service
 systemctl enable --global swayidle.service
 #systemctl enable --global udiskie.service
 systemctl enable --global xwayland-satellite.service
-#systemctl preset --global app-com.mitchellh.ghostty.service
+systemctl preset --global app-com.mitchellh.ghostty.service
 #systemctl preset --global chezmoi-init
 #systemctl preset --global chezmoi-update
 systemctl preset --global cliphist
