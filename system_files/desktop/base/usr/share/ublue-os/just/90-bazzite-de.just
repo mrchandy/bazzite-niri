@@ -4,7 +4,7 @@ _zdots-update:
 
 _zdots-reset FILE:
     #!/usr/bin/env bash
-    chezmoi apply --force -S "/usr/share/zirconium/zdots" --verbose --config "$HOME/.config/zirconium/chezmoi/chezmoi.toml" {{FILE}}
+    chezmoi apply --force -S "/usr/share/zirconium/zdots" --verbose --config "$HOME/.config/zirconium/chezmoi/chezmoi.toml" {{ FILE }}
 
 _zdots-override-all:
     #!/usr/bin/env bash
