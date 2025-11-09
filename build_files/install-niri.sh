@@ -42,10 +42,11 @@ dnf -y install \
    git-core \
    glycin-thumbnailer \
    gnome-keyring \
+   gnome-keyring-pam \
    greetd \
    greetd-selinux \
    input-remapper \
-   nautilus \
+   dolphin \
    webp-pixbuf-loader \
    wl-clipboard \
    wlsunset \
@@ -53,7 +54,8 @@ dnf -y install \
    xdg-user-dirs \
    xwayland-satellite \
    tuned \
-   tuned-ppd
+   tuned-ppd \
+   playerctl
 
 rm -rf /usr/share/doc/just
 
