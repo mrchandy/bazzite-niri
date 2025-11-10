@@ -46,7 +46,7 @@ dnf -y install \
    greetd \
    greetd-selinux \
    input-remapper \
-   dolphin \
+   nautilus \
    webp-pixbuf-loader \
    wl-clipboard \
    wlsunset \
