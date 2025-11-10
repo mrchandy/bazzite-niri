@@ -55,7 +55,8 @@ dnf -y install \
    xwayland-satellite \
    tuned \
    tuned-ppd \
-   playerctl
+   playerctl \
+   NetworkManager-openvpn
 
 rm -rf /usr/share/doc/just
 
