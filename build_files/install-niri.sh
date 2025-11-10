@@ -40,23 +40,29 @@ dnf -y install \
    chezmoi \
    ddcutil \
    git-core \
-   glycin-thumbnailer \
+   gnome-disk-utility \
+   xdg-desktop-portal-gnome \
    gnome-keyring \
    gnome-keyring-pam \
    greetd \
    greetd-selinux \
    input-remapper \
-   nautilus \
-   webp-pixbuf-loader \
    wl-clipboard \
    wlsunset \
-   xdg-desktop-portal-gnome \
    xdg-user-dirs \
    xwayland-satellite \
    tuned \
    tuned-ppd \
    playerctl \
-   NetworkManager-openvpn
+   NetworkManager-openvpn \
+   dolphin \
+   xdg-desktop-portal-kde \
+   kio-extras \
+   icoutils \
+   ffmpegthumbs \
+   kdegraphics-thumbnailers \
+   kdesdk-thumbnailers \
+   qt6-qtimageformats
 
 rm -rf /usr/share/doc/just
 
