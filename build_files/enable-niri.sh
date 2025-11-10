@@ -26,6 +26,7 @@ systemctl enable --global plasma-polkit-agent.service
 systemctl enable --global swayidle.service
 #systemctl enable --global udiskie.service
 systemctl enable --global xwayland-satellite.service
+systemctl enable --global ssh-agent.service
 systemctl preset --global app-com.mitchellh.ghostty.service
 #systemctl preset --global chezmoi-init
 #systemctl preset --global chezmoi-update
