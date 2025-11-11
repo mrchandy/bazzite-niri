@@ -62,7 +62,20 @@ dnf -y install \
    ffmpegthumbs \
    kdegraphics-thumbnailers \
    kdesdk-thumbnailers \
-   qt6-qtimageformats
+   qt6-qtimageformats \
+   kde-cli-tools \
+   kf5-kservice
+
+tee /usr/share/xdg-desktop-portal/niri-portals.conf <<'EOF'
+[preferred]
+default=kde;gnome;
+org.freedesktop.impl.portal.ScreenCast=gnome;
+org.freedesktop.impl.portal.Access=kde;
+org.freedesktop.impl.portal.Secret=gnome-keyring;
+EOF
+
+ln -sf ./kf5-applications.menu /etc/xdg/menus/applications.menu
+kbuildsyscoca6 --noincremental
 
 rm -rf /usr/share/doc/just
 
