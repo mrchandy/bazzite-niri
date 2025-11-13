@@ -4,7 +4,7 @@ PartOf=graphical-session.target
 After=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/xwayland-sattelite
+ExecStart=xwayland-satellite
 Restart=on-failure
 RestartSec=1
 

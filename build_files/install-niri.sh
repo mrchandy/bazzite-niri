@@ -56,6 +56,7 @@ dnf -y install \
    playerctl \
    NetworkManager-openvpn \
    dolphin \
+   ark \
    xdg-desktop-portal-kde \
    kio-extras \
    icoutils \
