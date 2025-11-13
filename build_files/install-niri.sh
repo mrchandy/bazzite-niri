@@ -76,7 +76,7 @@ org.freedesktop.impl.portal.Secret=gnome-keyring;
 EOF
 
 ln -sf ./kf5-applications.menu /etc/xdg/menus/applications.menu
-kbuildsyscoca6 --noincremental
+kbuildsycoca6 --noincremental
 
 rm -rf /usr/share/doc/just
 
