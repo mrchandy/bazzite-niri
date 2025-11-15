@@ -49,6 +49,7 @@ dnf -y install \
    input-remapper \
    wl-clipboard \
    wlsunset \
+   swayidle \
    xdg-user-dirs \
    xwayland-satellite \
    tuned \
