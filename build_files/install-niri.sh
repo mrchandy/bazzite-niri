@@ -44,6 +44,7 @@ dnf -y install \
    xdg-desktop-portal-gnome \
    gnome-keyring \
    gnome-keyring-pam \
+   adw-gtk3-theme \
    greetd \
    greetd-selinux \
    input-remapper \
@@ -68,13 +69,13 @@ dnf -y install \
    kde-cli-tools \
    kf5-kservice
 
-tee /usr/share/xdg-desktop-portal/niri-portals.conf <<'EOF'
-[preferred]
-default=kde;gnome;
-org.freedesktop.impl.portal.ScreenCast=gnome;
-org.freedesktop.impl.portal.Access=kde;
-org.freedesktop.impl.portal.Secret=gnome-keyring;
-EOF
+#tee /usr/share/xdg-desktop-portal/niri-portals.conf <<'EOF'
+#[preferred]
+#default=kde;gnome;
+#org.freedesktop.impl.portal.ScreenCast=gnome;
+#org.freedesktop.impl.portal.Access=kde;
+#org.freedesktop.impl.portal.Secret=gnome-keyring;
+#EOF
 
 ln -sf ./kf5-applications.menu /etc/xdg/menus/applications.menu
 kbuildsycoca6 --noincremental
