@@ -78,7 +78,7 @@ RUN --mount=type=cache,dst=/var/cache \
         dnf5 -y copr enable $copr; \
         dnf5 -y config-manager setopt copr:copr.fedorainfracloud.org:${copr////:}.priority=98 ;\
     done && unset -v copr && \
-    dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras} && \
+    dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras,-mesa} && \
     dnf5 -y config-manager addrepo --overwrite --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
     dnf5 -y install \
         https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
@@ -87,13 +87,12 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-steam.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-rar.repo && \
     dnf5 -y config-manager setopt "*bazzite*".priority=1 && \
-    dnf5 -y config-manager setopt "*terra*".priority=3 "*terra*".exclude="nerd-fonts topgrade scx-scheds steam python3-protobuf" && \
+    dnf5 -y config-manager setopt "*terra*".priority=3 "*terra*".exclude="nerd-fonts topgrade scx-tools scx-scheds steam python3-protobuf" && \
     dnf5 -y config-manager setopt "terra-mesa".enabled=true && \
-    dnf5 -y config-manager setopt "terra-nvidia".enabled=false && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
     dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
-    dnf5 -y config-manager setopt "*staging*".exclude="scx-scheds kf6-* mesa* mutter*" && \
+    dnf5 -y config-manager setopt "*staging*".exclude="scx-tools scx-scheds kf6-* mesa* mutter*" && \
     /ctx/cleanup
 
 # Install kernel
@@ -104,7 +103,8 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager setopt "*rpmfusion*".enabled=0 && \
     dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
-        scx-scheds && \
+        scx-scheds \
+        scx-tools && \
     dnf5 -y copr disable bieszczaders/kernel-cachyos-addons && \
     declare -A toswap=( \
         ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite"]="bootc rpm-ostree plymouth" \
@@ -137,6 +137,8 @@ RUN --mount=type=cache,dst=/var/cache \
 # Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
+    dnf5 -y remove \
+        pipewire-config-raop && \
     declare -A toswap=( \
         ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite"]="wireplumber" \
         ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib"]="pipewire bluez xorg-x11-server-Xwayland" \
@@ -363,7 +365,78 @@ COPY ./build_files/install-niri.sh /ctx/
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=secret,id=GITHUB_TOKEN \
-    /ctx/install-niri.sh && \
+    if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
+        dnf5 -y install \
+            qt \
+            krdp \
+            steamdeck-kde-presets-desktop \
+            kdeconnectd \
+            kdeplasma-addons \
+            rom-properties-kf6 \
+            fcitx5-mozc \
+            fcitx5-chinese-addons \
+            fcitx5-hangul \
+            kcm-fcitx5 \
+            gnome-disk-utility \
+            kio-extras \
+            krunner-bazaar \
+            ptyxis && \
+        dnf5 -y remove \
+            plasma-welcome \
+            plasma-welcome-fedora \
+            plasma-discover-kns \
+            kcharselect \
+            kde-partitionmanager \
+            plasma-discover \
+            konsole && \
+        sed -i '/<entry name="launchers" type="StringList">/,/<\/entry>/ s/<default>[^<]*<\/default>/<default>preferred:\/\/browser,applications:steam.desktop,applications:net.lutris.Lutris.desktop,applications:org.gnome.Ptyxis.desktop,applications:io.github.kolunmi.Bazaar.desktop,preferred:\/\/filemanager<\/default>/' /usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/config/main.xml && \
+        sed -i 's@\[Desktop Action new-window\]@\[Desktop Action new-window\]\nX-KDE-Shortcuts=Ctrl+Alt+T@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
+        sed -i '/^Comment/d' /usr/share/applications/org.gnome.Ptyxis.desktop && \
+        sed -i 's@Exec=ptyxis@Exec=kde-ptyxis@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
+        sed -i 's@Keywords=@Keywords=konsole;console;@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
+        cp /usr/share/applications/org.gnome.Ptyxis.desktop /usr/share/kglobalaccel/org.gnome.Ptyxis.desktop && \
+        setcap 'cap_net_raw+ep' /usr/libexec/ksysguard/ksgrd_network_helper && \
+        ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
+        ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
+        rm -f /usr/share/backgrounds/default.xml \
+    ; else \
+        declare -A toswap=( \
+            ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib"]="gsettings-desktop-schemas mutter gnome-shell" \
+        ) && \
+        for repo in "${!toswap[@]}"; do \
+            for package in ${toswap[$repo]}; do dnf5 -y swap --repo=$repo $package $package; done; \
+        done && unset -v toswap repo package && \
+        dnf5 versionlock add \
+            mutter \
+            gnome-shell \
+            gsettings-desktop-schemas && \
+        dnf5 -y install \
+            nautilus-gsconnect \
+            steamdeck-backgrounds \
+            steamdeck-gnome-presets \
+            gnome-randr-rust \
+            gnome-shell-extension-user-theme \
+            gnome-shell-extension-gsconnect \
+            rom-properties-gtk3 \
+            ibus-mozc \
+            openssh-askpass \
+            firewall-config && \
+        dnf5 -y remove \
+            gnome-software \
+            gnome-classic-session \
+            gnome-tour \
+            gnome-extensions-app \
+            gnome-system-monitor \
+            gnome-initial-setup \
+            gnome-shell-extension-background-logo \
+            gnome-shell-extension-apps-menu \
+            gnome-shell-extension-launch-new-instance \
+            gnome-shell-extension-places-menu \
+            gnome-shell-extension-window-list && \
+        /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
+        /ctx/build-gnome-extensions && \
+        systemctl enable dconf-update.service \
+    ; fi && \
     /ctx/cleanup
 
 # ublue-os packages
@@ -497,11 +570,263 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/ghcurl "https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf" -Lo /etc/dxvk-example.conf && \
     /ctx/ghcurl "https://raw.githubusercontent.com/bazzite-org/waydroid-scripts/main/waydroid-choose-gpu.sh" -Lo /usr/bin/waydroid-choose-gpu && \
     chmod +x /usr/bin/waydroid-choose-gpu && \
+    dnf5 config-manager setopt skip_if_unavailable=1 && \
     /ctx/ghcurl "https://github.com/ublue-os/toolboxes/raw/refs/heads/main/apps/docker/distrobox.ini" -Lo /etc/distrobox/docker.ini && \
     /ctx/ghcurl "https://github.com/ublue-os/toolboxes/raw/refs/heads/main/apps/incus/distrobox.ini" -Lo /etc/distrobox/incus.ini && \
     /ctx/image-info && \
     /ctx/build-initramfs && \
-    /ctx/finalize
+    /ctx/finalize && \
+    rm -rf /ctx
 
-RUN dnf5 config-manager setopt skip_if_unavailable=1 && \
-    bootc container lint
+RUN bootc container lint
+
+################
+# DECK BUILDS
+################
+
+FROM bazzite AS bazzite-deck
+
+ARG IMAGE_NAME="${IMAGE_NAME:-bazzite-deck}"
+ARG IMAGE_VENDOR="${IMAGE_VENDOR:-ublue-os}"
+ARG IMAGE_BRANCH="${IMAGE_BRANCH:-stable}"
+ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-kinoite}"
+ARG VERSION_TAG="${VERSION_TAG}"
+ARG VERSION_PRETTY="${VERSION_PRETTY}"
+
+COPY ./build_files/cleanup ./build_files/image-info ./build_files/ghcurl ./build_files/build-initramfs ./build_files/finalize /ctx/
+COPY system_files/deck/shared system_files/deck/${BASE_IMAGE_NAME} /
+
+# Setup Copr repos
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    dnf5 -y copr enable ublue-os/staging && \
+    dnf5 -y copr enable ublue-os/packages && \
+    dnf5 -y copr enable bazzite-org/bazzite && \
+    dnf5 -y copr enable bazzite-org/bazzite-multilib && \
+    dnf5 -y copr enable bazzite-org/obs-vkcapture && \
+    dnf5 -y copr enable hhd-dev/hhd && \
+    dnf5 -y copr enable ycollet/audinux && \
+    dnf5 config-manager unsetopt skip_if_unavailable && \
+    /ctx/cleanup
+
+# Configure KDE & GNOME
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    dnf5 -y remove \
+        jupiter-sd-mounting-btrfs && \
+    if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
+        dnf5 -y remove \
+            steamdeck-kde-presets-desktop && \
+       dnf5 -y install \
+            steamdeck-kde-presets \
+    ; else \
+        dnf5 -y install \
+            sddm && \
+        ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
+        ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
+        rm -f /usr/share/backgrounds/default.xml && \
+        dnf5 -y remove \
+            malcontent-control \
+    ; fi && \
+    /ctx/cleanup
+
+# Install new packages
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    dnf5 -y install \
+        jupiter-fan-control \
+        jupiter-hw-support-btrfs \
+        galileo-mura \
+        steamdeck-dsp \
+        powerbuttond \
+        $([[ "$IMAGE_BRANCH" == "unstable" || "$IMAGE_BRANCH" == "testing" ]] && echo "hhd-git" || echo "hhd") \
+        hhd-ui \
+        steamos-manager \
+        acpica-tools \
+        vpower \
+        steam_notif_daemon \
+        sdgyrodsu \
+        ibus-pinyin \
+        ibus-table-chinese-cangjie \
+        ibus-table-chinese-quick \
+        socat \
+        zstd \
+        zenity \
+        newt \
+        qt6-qtvirtualkeyboard \
+        xorg-x11-server-Xvfb \
+        python-vdf \
+        python-crcmod && \
+    git clone https://github.com/evlav/jupiter-dock-updater-bin.git \
+        --depth 1 \
+        /tmp/jupiter-dock-updater-bin && \
+    mv -v /tmp/jupiter-dock-updater-bin/packaged/usr/lib/jupiter-dock-updater /usr/libexec/jupiter-dock-updater && \
+    ln -s /usr/bin/steamos-logger /usr/bin/steamos-info && \
+    ln -s /usr/bin/steamos-logger /usr/bin/steamos-notice && \
+    ln -s /usr/bin/steamos-logger /usr/bin/steamos-warning && \
+    /ctx/cleanup
+
+# Install Steam Deck patched UPower
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    dnf5 -y swap \
+    --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite \
+        upower upower && \
+    dnf5 versionlock add \
+        upower \
+        upower-libs && \
+    /ctx/cleanup
+
+# Install Gamescope Session & Supporting changes
+# Add bootstrap_steam.tar.gz used by gamescope-session (Thanks GE & Nobara Project!)
+# Add sdl gamecontrollerdb used by handheld daemon for externals
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=secret,id=GITHUB_TOKEN \
+    mkdir -p /usr/share/gamescope-session-plus/ && \
+    curl --retry 3 -Lo /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz https://large-package-sources.nobaraproject.org/bootstrap_steam.tar.gz && \
+    mkdir -p /usr/share/sdl/ && \
+    /ctx/ghcurl "https://raw.githubusercontent.com/mdqinc/SDL_GameControllerDB/refs/heads/master/gamecontrollerdb.txt" -Lo /usr/share/sdl/gamecontrollerdb.txt && \
+    dnf5 -y install \
+    --repo copr:copr.fedorainfracloud.org:bazzite-org:bazzite \
+        gamescope-session-plus \
+        gamescope-session-steam && \
+    /ctx/cleanup
+
+# Cleanup & Finalize
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    mkdir -p "/etc/xdg/autostart" && \
+    mv "/etc/skel/.config/autostart/steam.desktop" "/etc/xdg/autostart/steam.desktop" && \
+    sed -i 's@Exec=waydroid first-launch@Exec=/usr/bin/waydroid-launcher first-launch\nX-Steam-Library-Capsule=/usr/share/applications/Waydroid/capsule.png\nX-Steam-Library-Hero=/usr/share/applications/Waydroid/hero.png\nX-Steam-Library-Logo=/usr/share/applications/Waydroid/logo.png\nX-Steam-Library-StoreCapsule=/usr/share/applications/Waydroid/store-logo.png\nX-Steam-Controller-Template=Desktop@g' /usr/share/applications/Waydroid.desktop && \
+    if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
+        sed -i 's/Exec=.*/Exec=systemctl start return-to-gamemode.service/' /etc/skel/Desktop/Return.desktop && \
+        mkdir -p /usr/share/ublue-os/backup && \
+        mv /usr/share/applications/com.github.maliit.keyboard.desktop /usr/share/ublue-os/backup/com.github.maliit.keyboard.desktop \
+    ; fi && \
+    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/input-remapper-gtk.desktop && \
+    for copr in \
+        ublue-os/staging \
+        ublue-os/packages \
+        bazzite-org/bazzite \
+        bazzite-org/bazzite-multilib \
+        bazzite-org/obs-vkcapture \
+        hhd-dev/hhd \
+        ycollet/audinux; \
+    do \
+        dnf5 -y copr disable -y $copr; \
+    done && unset -v copr && \
+    if grep -q "silverblue" <<< "${BASE_IMAGE_NAME}"; then \
+        systemctl disable gdm.service && \
+        systemctl enable sddm.service \
+    ; else \
+        systemctl disable usr-share-sddm-themes.mount \
+    ; fi && \
+    mkdir -p /tmp/bazzite-schema-test && \
+    find "/usr/share/glib-2.0/schemas/" -type f ! -name "*.gschema.override" -exec cp {} "/tmp/bazzite-schema-test/" \; && \
+    cp "/usr/share/glib-2.0/schemas/zz0-"*".gschema.override" "/tmp/bazzite-schema-test/" && \
+    glib-compile-schemas --strict /tmp/bazzite-schema-test && \
+    glib-compile-schemas /usr/share/glib-2.0/schemas &>/dev/null && \
+    rm -r /tmp/bazzite-schema-test && \
+    { rm -v /usr/share/applications/bazzite-steam-bpm.desktop || true; } && \
+    systemctl enable hhd.service && \
+    systemctl enable --global steamos-manager.service && \
+    systemctl enable bazzite-autologin.service && \
+    systemctl enable wireplumber-workaround.service && \
+    systemctl enable wireplumber-sysconf.service && \
+    systemctl enable pipewire-workaround.service && \
+    systemctl enable pipewire-sysconf.service && \
+    systemctl enable cec-onboot.service && \
+    systemctl enable cec-onpoweroff.service && \
+    systemctl enable cec-onsleep.service && \
+    systemctl enable bazzite-tdpfix.service && \
+    systemctl enable bazzite-grub-boot-success.timer && \
+    systemctl enable bazzite-grub-boot-success.service && \
+    systemctl --global disable sdgyrodsu.service && \
+    systemctl --global disable grub-boot-success.timer && \
+    systemctl disable grub-boot-indeterminate.service && \
+    systemctl disable input-remapper.service && \
+    systemctl disable uupd.timer && \
+    systemctl disable jupiter-fan-control.service && \
+    systemctl disable vpower.service && \
+    systemctl disable jupiter-biosupdate.service && \
+    systemctl disable jupiter-controller-update.service && \
+    dnf5 config-manager setopt skip_if_unavailable=1 && \
+    /ctx/image-info && \
+    /ctx/build-initramfs && \
+    /ctx/finalize && \
+    rm -rf /ctx
+
+RUN bootc container lint
+
+################
+# NVIDIA BUILDS
+################
+
+FROM ${NVIDIA_BASE} AS bazzite-nvidia
+
+ARG IMAGE_NAME="${IMAGE_NAME:-bazzite-nvidia}"
+ARG IMAGE_VENDOR="${IMAGE_VENDOR:-ublue-os}"
+ARG IMAGE_BRANCH="${IMAGE_BRANCH:-stable}"
+ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-kinoite}"
+ARG VERSION_TAG="${VERSION_TAG}"
+ARG VERSION_PRETTY="${VERSION_PRETTY}"
+
+# Fetch NVIDIA driver
+COPY system_files/nvidia/shared system_files/nvidia/${BASE_IMAGE_NAME} /
+COPY ./build_files/install-nvidia ./build_files/cleanup ./build_files/image-info \
+    ./build_files/build-initramfs ./build_files/finalize /ctx/
+
+# Remove everything that doesn't work well with NVIDIA, unset skip_if_unavailable option if was set beforehand
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    dnf5 config-manager unsetopt skip_if_unavailable && \
+    dnf5 -y remove \
+        nvidia-gpu-firmware \
+        rocm-hip \
+        rocm-opencl \
+        rocm-clinfo \
+        rocm-smi && \
+    /ctx/cleanup
+
+# Install NVIDIA driver
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=secret,id=GITHUB_TOKEN \
+    --mount=type=bind,from=nvidia,src=/,dst=/rpms/nvidia \
+    dnf5 -y copr enable ublue-os/staging && \
+    dnf5 -y install \
+        egl-wayland.x86_64 \
+        egl-wayland.i686 \
+        egl-wayland2.x86_64 \
+        egl-wayland2.i686 && \
+    /ctx/install-nvidia && \
+    rm -f /usr/share/vulkan/icd.d/nouveau_icd.*.json && \
+    ln -s libnvidia-ml.so.1 /usr/lib64/libnvidia-ml.so && \
+    dnf5 -y copr disable ublue-os/staging && \
+    /ctx/cleanup
+
+# Cleanup & Finalize
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    echo "import \"/usr/share/ublue-os/just/95-bazzite-nvidia.just\"" >> /usr/share/ublue-os/justfile && \
+    if grep -q "silverblue" <<< "${BASE_IMAGE_NAME}"; then \
+      mkdir -p "/usr/share/ublue-os/dconfs/nvidia-silverblue/" && \
+      cp "/usr/share/glib-2.0/schemas/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" "/usr/share/ublue-os/dconfs/nvidia-silverblue/" && \
+      dconf-override-converter to-dconf "/usr/share/ublue-os/dconfs/nvidia-silverblue/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" && \
+      rm "/usr/share/ublue-os/dconfs/nvidia-silverblue/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" \
+    ; fi && \
+    mkdir -p /tmp/bazzite-schema-test && \
+    find "/usr/share/glib-2.0/schemas/" -type f ! -name "*.gschema.override" -exec cp {} "/tmp/bazzite-schema-test/" \; && \
+    cp "/usr/share/glib-2.0/schemas/zz0-"*".gschema.override" "/tmp/bazzite-schema-test/" && \
+    glib-compile-schemas --strict /tmp/bazzite-schema-test && \
+    glib-compile-schemas /usr/share/glib-2.0/schemas &>/dev/null && \
+    rm -r /tmp/bazzite-schema-test && \
+    systemctl disable supergfxd.service && \
+    dnf5 config-manager setopt skip_if_unavailable=1 && \
+    /ctx/image-info && \
+    /ctx/build-initramfs && \
+    /ctx/finalize && \
+    rm -rf /ctx 
+
+RUN bootc container lint
