@@ -69,13 +69,19 @@ dnf -y install \
    kde-cli-tools \
    kf5-kservice
 
-#tee /usr/share/xdg-desktop-portal/niri-portals.conf <<'EOF'
-#[preferred]
-#default=kde;gnome;
-#org.freedesktop.impl.portal.ScreenCast=gnome;
-#org.freedesktop.impl.portal.Access=kde;
-#org.freedesktop.impl.portal.Secret=gnome-keyring;
-#EOF
+
+# Setup Portals for niri, and dolphin
+tee /usr/share/xdg-desktop-portal/niri-portals.conf <<'EOF'
+[preferred]
+default=gnome;gtk;
+org.freedesktop.impl.portal.FileChooser=kde;
+org.freedesktop.impl.portal.Access=gtk;
+org.freedesktop.impl.portal.Notification=gtk;
+org.freedesktop.impl.portal.Secret=gnome-keyring;
+EOF
+
+# Set default terminal icon in Dolphin
+sed -i '/\[General\]/a\TerminalApplication=com.mitchellh.ghostty.desktop\nTerminalService=com.mitchellh.ghostty.desktop' /usr/share/kde-settings/kde-profile/default/xdg/kdeglobals
 
 ln -sf ./kf5-applications.menu /etc/xdg/menus/applications.menu
 kbuildsycoca6 --noincremental
