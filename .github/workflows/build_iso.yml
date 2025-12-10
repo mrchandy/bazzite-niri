@@ -23,7 +23,7 @@ jobs:
       matrix:
         image_name:
           - bazzite
-        major_version: [41]
+        major_version: [43]
     steps:
 
       - name: Free Disk Space (Ubuntu)
