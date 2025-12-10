@@ -81,7 +81,26 @@ org.freedesktop.impl.portal.Secret=gnome-keyring;
 EOF
 
 # Set default terminal icon in Dolphin
-sed -i '/\[General\]/a\TerminalApplication=com.mitchellh.ghostty.desktop\nTerminalService=com.mitchellh.ghostty.desktop' /usr/share/kde-settings/kde-profile/default/xdg/kdeglobals
+install -d /usr/share/kde-settings/kde-profile/default/xdg/
+tee /usr/share/kde-settings/kde-profile/default/xdg/kdeglobals <<'EOF'
+[General]
+fixed=Noto Sans Mono,10,-1,5,50,0,0,0,0,0
+font=Noto Sans,10,-1,5,50,0,0,0,0,0
+menuFont=Noto Sans,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Noto Sans,8,-1,5,50,0,0,0,0,0
+toolBarFont=Noto Sans,9,-1,5,50,0,0,0,0,0
+TerminalApplication=com.mitchellh.ghostty.desktop
+TerminalService=com.mitchellh.ghostty.desktop
+
+[Icons]
+Theme=breeze
+
+[KDE]
+LookAndFeelPackage=org.fedoraproject.fedora.desktop
+SingleClick=false
+ColorScheme=BreezeLight
+widgetStyle=Breeze
+EOF
 
 ln -sf ./kf5-applications.menu /etc/xdg/menus/applications.menu
 kbuildsycoca6 --noincremental

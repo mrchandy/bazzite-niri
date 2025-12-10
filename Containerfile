@@ -133,6 +133,14 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/install-firmware && \
     /ctx/cleanup
 
+# This should upgrade mesa drivers before Bazzite because their step was failing
+RUN dnf5 config-manager setopt "terra-mesa".enabled=true && \
+    dnf5 -y --enablerepo=terra-mesa upgrade \
+        mesa-filesystem \
+        mesa-dri-drivers \
+        mesa-va-drivers \
+        mesa-vulkan-drivers
+
 # Install patched fwupd
 # Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland
 RUN --mount=type=cache,dst=/var/cache \
