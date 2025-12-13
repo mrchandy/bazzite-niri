@@ -6,10 +6,10 @@ from typing import Any
 import re
 from collections import defaultdict
 
-REGISTRY = "docker://ghcr.io/mrchandy/"
+REGISTRY = "docker://ghcr.io/ublue-os/"
 
 IMAGES = [
-    "bazzite-niri",
+    "bazzite",
 ]
 
 RETRIES = 3
