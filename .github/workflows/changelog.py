@@ -6,7 +6,7 @@ from typing import Any
 import re
 from collections import defaultdict
 
-REGISTRY = "docker://ghcr.io/ublue-os/"
+REGISTRY = "docker://ghcr.io/mrchandy/"
 
 IMAGES = [
     "bazzite-niri",
