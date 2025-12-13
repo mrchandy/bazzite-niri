@@ -54,7 +54,7 @@ ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
 COPY system_files/desktop/shared system_files/desktop/${BASE_IMAGE_NAME} /
-COPY ./build_files/install-niri.sh ./build_files/enable-niri.sh ./build_files/cleanup ./build_files/install-kernel ./build_files/ghcurl ./build_files/dnf5-setopt ./build_files/dnf5-search ./build_files/build-gnome-extensions /ctx/
+COPY ./build_files/install-niri.sh ./build_files/install-nautilus.sh ./build_files/install-dolphin.sh ./build_files/enable-niri.sh ./build_files/cleanup ./build_files/install-kernel ./build_files/ghcurl ./build_files/dnf5-setopt ./build_files/dnf5-search ./build_files/build-gnome-extensions /ctx/
 
 # Setup Copr repos
 RUN --mount=type=cache,dst=/var/cache \
@@ -406,7 +406,8 @@ RUN --mount=type=cache,dst=/var/cache \
         rm -f /usr/share/backgrounds/default.xml \
     # --------------------------- INSTALL NIRI ------------------------------
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
-    	./ctx/install-niri.sh \
+    	./ctx/install-niri.sh && \
+        ./ctx/install-nautilus.sh \
     ; else \
         declare -A toswap=( \
             ["copr:copr.fedorainfracloud.org:bazzite-org:bazzite-multilib"]="gsettings-desktop-schemas mutter gnome-shell" \
