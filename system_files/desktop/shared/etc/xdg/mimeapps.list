@@ -1,6 +1,2 @@
 [Default Applications]
-<<<<<<< HEAD
 application/vnd.flatpak.ref=io.github.kolunmi.Bazaar.desktop
-=======
-application/vnd.flatpak.ref=io.github.kolunmi.Bazaar.desktop
->>>>>>> 20f97b42fa50a932d1aff2549c10ed498f5e59d7
