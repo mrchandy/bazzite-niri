@@ -1,9 +1,11 @@
 #!/bin/bash 
 
-# Install Nautilus, terminal extension, and thumbnail dependancies
+# Install Nautilus, and thumbnailers
 dnf -y install \
     nautilus \
-    glycin-thumbnailer
+    glycin-thumbnailer \
+    mcomix3-thumbnailer \
+    evince-thumbnailer
 
 # Codecs for video thumbnails on nautilus <- From Zirconium
 dnf config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-multimedia.repo
