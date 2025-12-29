@@ -35,7 +35,6 @@ dnf -y install \
    greetd-selinux \
    input-remapper \
    wl-clipboard \
-   wlsunset \
    swayidle \
    xwayland-satellite \
    tuned \
@@ -65,11 +64,8 @@ rm -rf /usr/share/doc/just
 dnf install -y --setopt=install_weak_deps=False \
    kf6-kirigami \
    qt6ct \
-   polkit-kde \
    plasma-breeze \
    kf6-qqc2-desktop-style
-
-git clone "https://github.com/noctalia-dev/noctalia-shell.git" /usr/share/zirconium/noctalia-shell
 
 git clone "https://github.com/zirconium-dev/zdots.git" /usr/share/zirconium/zdots
 
