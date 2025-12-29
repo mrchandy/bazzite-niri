@@ -51,6 +51,7 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:gamescope} |
 | **Niri** | {pkgrel:niri} |
+| **Bazaar** | {pkgrel:bazaar} |
 
 {changes}
 
@@ -70,15 +71,16 @@ BLACKLIST_VERSIONS = [
     "kernel",
     "mesa-filesystem",
     "gamescope",
+    "bazaar",
+    "niri",
+    "gnome-control-center-filesystem",
+    "plasma-desktop",
     "atheros-firmware",
     "nvidia-kmod-common",
     "nvidia-kmod-common-lts",
-    "hhd-git",
-    "hhd",
 ]
 
 PKG_ALIAS = {
-    "hhd-git": "hhd",
 }
 
 

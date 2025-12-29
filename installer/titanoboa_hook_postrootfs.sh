@@ -4,11 +4,13 @@ set -exo pipefail
 
 source /etc/os-release
 
-# Install Anaconda webui
-dnf install -qy anaconda-live libblockdev-{btrfs,lvm,dm}
+# Remove all versionlocks, in order to avoid dependency issues
+dnf -qy versionlock clear
+
+# Install Anaconda
+dnf install -qy --enable-repo=fedora-cisco-openh264 --allowerasing firefox anaconda-live libblockdev-{btrfs,lvm,dm}
+
 mkdir -p /var/lib/rpm-state # Needed for Anaconda Web UI
-# TODO: Enable Anaconda Web UI whenever locale switching in kde lands
-# dnf install -qy anaconda-webui
 
 # Utilities for displaying a dialog prompting users to review secure boot documentation
 dnf install -qy --setopt=install_weak_deps=0 qrencode yad
@@ -150,7 +152,10 @@ EOF
 # Signed Images
 cat <<EOF >>/usr/share/anaconda/post-scripts/install-configure-upgrade.ks
 %post --erroronfail --log=/tmp/anacoda_custom_logs/bootc-switch.log
-bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry $imageref:$imagetag
+# bootc switch --mutate-in-place --enforce-container-sigpolicy --transport registry $imageref:$imagetag
+
+# DELETEME: This is a nasty hack. Remove whenever http://github.com/bootc-dev/bootc/commit/f7b41cc1ebfc823e9de848b55773faddc59ecf88 makes it into a release
+sed -i 's|container-image-reference=.*|container-image-reference=ostree-image-signed:docker://$imageref:$imagetag|' /ostree/deploy/default/deploy/*.origin
 %end
 EOF
 
@@ -494,27 +499,6 @@ if [[ $desktop_env == kde ]]; then
 Enabled=false
 EOF
 fi
-
-# Add support for controllers
-_tmp=$(mktemp -d)
-(
-    set -eo pipefail
-    dnf -yq install python-evdev python-rich
-    git clone https://github.com/hhd-dev/jkbd "$_tmp"
-    cd "$_tmp"
-    python -m venv .venv
-    #shellcheck disable=1091
-    source .venv/bin/activate
-    pip install build installer setuptools wheel
-    python -m build --wheel --no-isolation
-    python -m installer --prefix=/usr --destdir=/ dist/*.whl
-    sed -i '1s|.*|#!/usr/bin/python|' /usr/bin/jkbd
-    mkdir -p /usr/lib/systemd/system/
-    install -m644 usr/lib/systemd/system/jkbd.service /usr/lib/systemd/system/jkbd.service
-    systemctl enable jkbd.service
-) || :
-rm -rf "$_tmp"
-unset -v _tmp
 
 # Install Gparted
 dnf -yq install gparted

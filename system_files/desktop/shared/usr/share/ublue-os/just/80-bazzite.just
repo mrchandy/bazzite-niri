@@ -551,6 +551,87 @@ toggle-password-feedback ACTION="":
       echo "enabled, restart terminal to see changes"
     fi
 
+# Toggle global Proton FSR4 upgrade on RDNA4 GPUs; upgrades FSR 3.1+ → FSR 4 on Proton 10 or GE 10-25 or later
+[group("gaming")]
+toggle-global-fsr4 ACTION="":
+    #!/usr/bin/bash
+    set -euo pipefail
+    source /usr/lib/ujust/ujust.sh
+
+    FILE="$HOME/.config/environment.d/99-proton-fsr4.conf"
+
+    CURRENT="Disabled"
+    if [[ -f "$FILE" ]]; then
+        CURRENT="Enabled"
+    fi
+
+    OPTION="{{ ACTION }}"
+    if [[ -z "$OPTION" ]]; then
+        echo -e "${bold}Global FSR4 (RDNA4):${normal} $CURRENT"
+        echo ""
+        echo "Enables Proton's FSR4 upgrade path on RDNA4 GPUs (e.g. RX 9070 XT)."
+        echo "When enabled, Proton can upgrade games using FSR 3.1+ to FSR 4"
+        echo "and automatically fetch the required FSR4 DLL."
+        echo ""
+        OPTION="$(ugum choose "Enable" "Disable" "Exit without saving")"
+    fi
+
+    case "$OPTION" in
+        Enable|enable)
+            mkdir -p "$HOME/.config/environment.d"
+            echo "PROTON_FSR4_UPGRADE=1" > "$FILE"
+            echo -e "${green}${bold}Enabled${normal}: PROTON_FSR4_UPGRADE=1"
+            ;;
+        Disable|disable)
+            rm -f "$FILE"
+            echo -e "${red}${bold}Disabled${normal}: PROTON_FSR4_UPGRADE removed"
+            ;;
+        *)
+            echo "No changes made."
+            ;;
+    esac
+
+# Toggle global SteamDeck=0 environment variable to prevent games from detecting hardware as a Steam Deck. Useful for HTPC setups to avoid hidden settings or forced lower textures.
+[group("gaming")]
+toggle-steamdeck-var ACTION="":
+    #!/usr/bin/bash
+    set -euo pipefail
+    source /usr/lib/ujust/ujust.sh
+
+    FILE="$HOME/.config/environment.d/99-steamdeck-var.conf"
+
+    CURRENT="Disabled"
+    if [[ -f "$FILE" ]]; then
+        CURRENT="Enabled"
+    fi
+
+    OPTION="{{ ACTION }}"
+    if [[ -z "$OPTION" ]]; then
+        echo -e "${bold}SteamDeck=0 Environment Variable:${normal} $CURRENT"
+        echo ""
+        echo "Sets the SteamDeck environment variable to 0 globally."
+        echo "This prevents most games from detecting your hardware as a Steam Deck,"
+        echo "which can avoid hidden settings, forced lower textures, or FPS locks."
+        echo "Useful for HTPC setups or when using gamescope session on non-Deck hardware."
+        echo ""
+        OPTION="$(ugum choose "Enable" "Disable" "Exit without saving")"
+    fi
+
+    case "$OPTION" in
+        Enable|enable)
+            mkdir -p "$HOME/.config/environment.d"
+            echo "SteamDeck=0" > "$FILE"
+            echo -e "${green}${bold}Enabled${normal}: SteamDeck=0"
+            ;;
+        Disable|disable)
+            rm -f "$FILE"
+            echo -e "${red}${bold}Disabled${normal}: SteamDeck=0 removed"
+            ;;
+        *)
+            echo "No changes made."
+            ;;
+    esac
+
 # Toggle whether Steam launches with the -steamdeck flag, which causes Big Picture / Game Mode to emulate Steam Deck behavior. Disabling this can prevent games from forcing Steam Deck-specific assets, such as lower-resolution textures.
 [group("gaming")]
 _toggle-steamdeck-alias:
