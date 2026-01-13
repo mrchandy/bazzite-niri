@@ -109,11 +109,35 @@ mkdir -p /tmp/anacoda_custom_logs
 %pre --erroronfail --log=/tmp/anacoda_custom_logs/detect_bitlocker.log
 DOCS_QR=/tmp/detect_bitlocker_qr.png
 IS_BITLOCKER=\$(lsblk -o FSTYPE --json | jq '.blockdevices | map(select(.fstype == "BitLocker")) | . != []')
+{ WARNING_MSG="\$(</dev/stdin)"; } << 'WARNINGEOF'
+<span size="x-large">Windows Bitlocker partition detected</span>
+
+It might interrupt the installation process.
+In such case, please, do <b>one</b> of the following:
+    a) Disconnect its storage drive.
+    b) Disable Bitlocker in Windows.
+    c) Delete it in GNOME Disks.
+
+Do you wish to continue?
+WARNINGEOF
+
 if [[ \$IS_BITLOCKER =~ true ]]; then
     qrencode -o \$DOCS_QR "https://www.wikihow.com/Turn-Off-BitLocker"
-    run0 --user=liveuser yad --timeout=0 --image=\$DOCS_QR \
-        --text="<b>Windows Bitlocker partition detected</b>\nPlease, disable it in Windows or delete it in GNOME Disks\nor disconnect its storage drive." || :
-    exit 1
+    _EXITLOCK=1
+    _RETCODE=0
+    while [[ \$_EXITLOCK -ne 0 ]]; do
+        run0 --user=liveuser yad \
+            --on-top \
+            --timeout=10 \
+            --image=\$DOCS_QR \
+            --text="\$WARNING_MSG" \
+            --button="Yes, I'm aware, continue":0 --button="Cancel installation":10
+        _RETCODE=\$?
+        case \$_RETCODE in
+            0) _EXITLOCK=0; ;;
+            10) _EXITLOCK=0; pkill liveinst; pkill firefox; exit 0 ;;
+        esac
+    done
 fi
 %end
 
@@ -429,6 +453,29 @@ Nvidia drivers might not be functional on live isos.
 Please do not use them in benchmarks.
 WARNINGEOF
 EOF
+fi
+
+# Use GSK_RENDERER=gl for nvidia, workaround for GTK apps not opening.
+if [[ $imageref == *-nvidia* ]]; then
+    mkdir -p /etc/environment.d /etc/skel/.config/environment.d
+    echo "GSK_RENDERER=gl" >>/etc/environment.d/99-nvidia-fix.conf
+    echo "GSK_RENDERER=gl" >>/etc/skel/.config/environment.d/99-nvidia-fix.conf
+fi
+
+# Reenable noveau.
+if [[ $imageref == *-nvidia* ]]; then
+    for pkg in nvidia-gpu-firmware mesa-vulkan-drivers; do
+        dnf -yq reinstall --allowerasing $pkg ||
+            dnf -yq install --allowerasing $pkg
+    done
+    # Ensure noveau vulkan icds exist
+    (
+        shopt -u nullglob
+        ls /usr/share/vulkan/icd.d/nouveau_icd.*.json >/dev/null
+    ) || {
+        echo >&2 "::error::No nouveau vulkan icds found at /usr/share/vulkan/icd.d/nouveau_icd.*.json"
+        exit 1
+    }
 fi
 
 # Determine desktop environment. Must match one of /usr/libexec/livesys/sessions.d/livesys-{desktop_env}
