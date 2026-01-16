@@ -6,7 +6,7 @@ cat /etc/pam.d/greetd
 add_wants_niri() {
     sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
 }
-add_wants_niri swayidle.service
+#add_wants_niri swayidle.service
 #add_wants_niri udiskie.service
 cat /usr/lib/systemd/user/niri.service
 systemctl enable greetd
