@@ -6,7 +6,8 @@ dnf -y install \
     glycin-thumbnailer \
     mcomix3-thumbnailer \
     evince-thumbnailer \
-    webp-pixbuf-loader
+    webp-pixbuf-loader \
+    sushi
 
 # Codecs for video thumbnails on nautilus <- From Zirconium
 dnf config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-multimedia.repo
