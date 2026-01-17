@@ -35,7 +35,6 @@ dnf -y install \
    greetd-selinux \
    input-remapper \
    wl-clipboard \
-   swayidle \
    xwayland-satellite \
    tuned \
    tuned-ppd \
