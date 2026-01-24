@@ -438,6 +438,15 @@ EOF
 echo '#!/usr/bin/bash' >/usr/bin/on_gui_login.sh
 chmod +x /usr/bin/on_gui_login.sh
 mkdir -p /etc/skel/.config/autostart
+cat >>/usr/bin/on_gui_login.sh <<'EOF'
+# if CSM/Legacy show blocking message and power off
+if [[ ! -d /sys/firmware/efi ]]; then
+    yad --undecorated --on-top --timeout=0 --button=Shutdown:0 \
+        --text="Bazzite does not support CSM/Legacy Boot. Please boot into your UEFI/BIOS settings, disable CSM/Legacy Mode, and reboot." || true
+    systemctl poweroff || shutdown -h now || true
+fi
+EOF
+
 cat >/etc/skel/.config/autostart/on_gui_login.desktop <<'EOF'
 [Desktop Entry]
 Exec=/usr/bin/on_gui_login.sh
@@ -496,7 +505,7 @@ esac
 rm -vf /etc/skel/.config/autostart/steam*.desktop
 
 # Remove packages that shouldnt be used in a live session
-dnf -yq remove steam lutris || :
+dnf -yq remove steam lutris bazaar || :
 
 # Warn about limited capabilities of live sessions, and also show buttons to:
 #   - Install Bazzite
