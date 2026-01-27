@@ -43,7 +43,7 @@ dnf -y install \
 
 dnf -y copr enable avengemedia/danklinux
 dnf -y copr disable avengemedia/danklinux
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:avengemedia:danklinux install quickshell
+dnf -y --enablerepo copr:copr.fedorainfracloud.org:avengemedia:danklinux install quickshell-git
 dnf -y copr enable avengemedia/dms
 dnf -y copr disable avengemedia/dms
 dnf -y \
