@@ -51,6 +51,7 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:gamescope} |
 | **Niri** | {pkgrel:niri} |
+| **DMS** | {pkgrel:dms} |
 | **Bazaar** | {pkgrel:bazaar} |
 
 {changes}
