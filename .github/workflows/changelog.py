@@ -52,6 +52,7 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Gamescope** | {pkgrel:gamescope} |
 | **Niri** | {pkgrel:niri} |
 | **DMS** | {pkgrel:dms} |
+| **Quickshell** | {pkgrel:quickshell} |
 | **Bazaar** | {pkgrel:bazaar} |
 
 {changes}
