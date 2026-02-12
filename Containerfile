@@ -60,7 +60,7 @@ COPY system_files/desktop/shared system_files/desktop/${BASE_IMAGE_NAME} /
 COPY firmware /
 
 # Copy Homebrew files from the brew image
-COPY --from=ghcr.io/ublue-os/brew:latest@sha256:4ebbef6de3b3cb3776dce46a03e0e9619499a07a4992503546d06f724d8ee039 /system_files /
+COPY --from=ghcr.io/ublue-os/brew:latest@sha256:3a49f567df02179f6f2db4c10616122380aaed632dc04c3b25c86135d915f051 /system_files /
 
 # Setup Copr repos
 RUN --mount=type=cache,dst=/var/cache \
@@ -302,6 +302,8 @@ RUN --mount=type=cache,dst=/var/cache \
     chmod +x /usr/bin/framework_tool && \
     sed -i 's|uupd|& --disable-module-distrobox|' /usr/lib/systemd/system/uupd.service && \
     setcap 'cap_sys_admin+p' $(readlink -f /usr/bin/sunshine) && \
+    : "Use sunshine-kms.service instead to workaround upstream issues with BETA" && \
+    sed -i 's|Exec=/usr/bin/env systemctl start --u sunshine|Exec=/usr/bin/env systemctl start --u sunshine-kms|' /usr/share/applications/dev.lizardbyte.app.Sunshine.desktop && \
     dnf5 -y --setopt=install_weak_deps=False install \
         rocm-hip \
         rocm-opencl \
@@ -492,6 +494,7 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/90-bazzite-picker.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/90-bazzite-de.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/91-bazzite-decky.just\"" >> /usr/share/ublue-os/justfile && \
+    echo "import \"/usr/share/ublue-os/just/92-bazzite-verify.just\"" >> /usr/share/ublue-os/justfile && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
       systemctl enable usr-share-sddm-themes.mount && \
       mkdir -p "/usr/share/ublue-os/dconfs/desktop-kinoite/" && \
@@ -571,6 +574,7 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl --global enable podman.socket && \
     systemctl --global enable systemd-tmpfiles-setup.service && \
     systemctl --global disable sunshine.service && \
+    systemctl --global disable sunshine-kms.service && \
     systemctl disable waydroid-container.service && \
     systemctl enable greenboot-healthcheck.service && \
     systemctl enable greenboot-set-rollback-trigger.service && \

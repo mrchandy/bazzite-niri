@@ -146,7 +146,7 @@ configure-grub ACTION="":
       local options=(
         "Hide After Successful Boot (menu_auto_hide=2)"
         "Same except when Dual Booting (menu_auto_hide=1)"
-        "Always Show Grub (menu_auto_hide=0)"
+        "Always Show Grub (unset menu_auto_hide)"
         "Exit without changes"
       )
       local choice
@@ -167,8 +167,8 @@ configure-grub ACTION="":
           sudo grub2-editenv - set menu_auto_hide=1
           echo "GRUB menu is now set to ${bold}${yellow}Hide After Successful Boot except when Dual Booting${normal}."
           ;;
-        *"(menu_auto_hide=0)"*|show)
-          sudo grub2-editenv - set menu_auto_hide=0
+        *"(unset menu_auto_hide)"*|show)
+          sudo grub2-editenv - unset menu_auto_hide
           echo "GRUB menu is now set to ${bold}${green}Always Show${normal}."
           ;;
         *"exit without changes"*|exit)
@@ -461,30 +461,31 @@ bazzite-cli:
     # Remove bling, handle if old method
     function remove-bling(){
     shell="$1"
+    local line=""
     if [[ "${shell}" == "fish" ]]; then
         sed -i '/### bling.fish source start/,/### bling.fish source end/d' \
             "${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish" \
             || \
-            line=$(grep -n "source /usr/share/ublue-os/bluefin-cli/bling.fish" \
+            { line=$(grep -n "source /usr/share/bazzite-cli/bling.fish" \
             "${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish" \
-            | grep -Eo '^[^:]+') && sed -i "${line}"d \
-            "${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
+            | grep -Eo '^[^:]+' | head -n1) && [[ -n "${line}" ]] && sed -i "${line}"d \
+            "${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"; }
     elif [[ "${shell}" == "zsh" ]]; then
         sed -i '/### bling.sh source start/,/### bling.sh source end/d' \
             "${ZDOTDIR:-$HOME}/.zshrc" \
             || \
-            line=$(grep -n "source /usr/share/ublue-os/bluefin-cli/bling.sh" \
+            { line=$(grep -n "source /usr/share/bazzite-cli/bling.sh" \
             "${ZDOTDIR:-$HOME}/.zshrc" \
-            | grep -Eo '^[^:]+') && sed -i "${line}"d \
-            "${ZDOTDIR:-$HOME}/.zshrc"
+            | grep -Eo '^[^:]+' | head -n1) && [[ -n "${line}" ]] && sed -i "${line}"d \
+            "${ZDOTDIR:-$HOME}/.zshrc"; }
     elif [[ "${shell}" == "bash" ]]; then
         sed -i '/### bling.sh source start/,/### bling.sh source end/d' \
             "${HOME}/.bashrc" \
             || \
-            line=$(grep -n "source /usr/share/ublue-os/bluefin-cli/bling.sh" \
+            { line=$(grep -n "source /usr/share/bazzite-cli/bling.sh" \
             "${HOME}/.bashrc" \
-            | grep -Eo '^[^:]+') && sed -i "${line}"d \
-            "${HOME}/.bashrc"
+            | grep -Eo '^[^:]+' | head -n1) && [[ -n "${line}" ]] && sed -i "${line}"d \
+            "${HOME}/.bashrc"; }
     fi
     }
 
