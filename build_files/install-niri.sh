@@ -40,6 +40,7 @@ dnf -y install \
    tuned-ppd \
    playerctl \
    NetworkManager-openvpn \
+   cups-pk-helper \
    qt6-qtmultimedia \
    qt6-qtimageformats
 
