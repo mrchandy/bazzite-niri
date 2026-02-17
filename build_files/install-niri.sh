@@ -39,7 +39,9 @@ dnf -y install \
    tuned \
    tuned-ppd \
    playerctl \
-   NetworkManager-openvpn
+   NetworkManager-openvpn \
+   qt6-qtmultimedia \
+   qt6-qtimageformats
 
 dnf -y copr enable avengemedia/danklinux
 dnf -y copr disable avengemedia/danklinux
