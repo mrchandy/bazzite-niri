@@ -58,7 +58,7 @@ dnf -y \
     dms-cli \
     dms-greeter \
     dgop \
-    dsearch \
+    danksearch \
     matugen \
     cliphist
 
