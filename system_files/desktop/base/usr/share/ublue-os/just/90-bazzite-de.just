@@ -22,3 +22,52 @@ _reset-niri:
 
 update-greeter:
     dms greeter sync
+
+enable-dsearch ACTION="":
+    #!/usr/bin/env bash
+    source /usr/lib/ujust/ujust.sh
+    DSEARCH_STATUS="Disabled"
+    if systemctl --user is-enabled dsearch | grep -q enabled; then
+      DSEARCH_STATUS="Enabled"
+    fi
+    OPTION="{{ ACTION }}"
+    if [ "$OPTION" == "help" ]; then
+      echo "Usage: ujust enable-dsearch <option>"
+      echo "  <option>: Specify the option to skip the interactive prompt"
+      echo "  Use 'enable' to enable dsearch service"
+      echo "  Use 'disable' to disable dsearch service"
+      exit 0
+    elif [ "$OPTION" == "" ]; then
+      # Display current status
+      if [ "$DSEARCH_STATUS" == "Enabled" ]; then
+        echo -e "\n${bold}dsearch${normal} is ${green}$DSEARCH_STATUS${normal}\n"
+      else
+        echo -e "\n${bold}dsearch${normal} is ${yellow}$DSEARCH_STATUS${normal}\n"
+      fi
+      # Prompt user for action
+      echo "Choose an option:"
+      OPTION=$(ugum choose "Enable dsearch" "Disable dsearch" "Exit without saving")
+    fi
+    case "$OPTION" in
+      "Enable dsearch"|enable)
+        echo "Enabling dsearch..."
+        systemctl --user enable dsearch
+        systemctl --user start dsearch
+        echo -e "\n${bold}dsearch is now ${green}Enabled${normal}."
+        echo -e "\n${bold}dsearch${normal} config is generated at ~/.config/danksearch/config.toml"
+        echo -e "See https://danklinux.com/docs/danksearch/configuration for configuration documentation."
+        echo -e "\nUse ${bold}dsearch index generate${normal} to build the initial index"
+        echo -e "Initiate a filesystem search by typing ${bold}/ ${normal}in the launcher"
+        echo " "
+        ;;
+      "Disable dsearch"|disable)
+        echo -e "\nDisabling dsearch..."
+        systemctl --user disable dsearch
+        systemctl --user stop dsearch
+        echo -e "\n${bold}dsearch${normal} is now ${yellow}Disabled${normal}."
+        echo " "
+        ;;
+      "Exit without saving"|*)
+        echo "No changes made."
+        ;;
+    esac
