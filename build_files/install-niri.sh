@@ -42,7 +42,8 @@ dnf -y install \
    NetworkManager-openvpn \
    cups-pk-helper \
    qt6-qtmultimedia \
-   qt6-qtimageformats
+   qt6-qtimageformats \
+   kf6-kimageformats
 
 dnf -y copr enable avengemedia/danklinux
 dnf -y copr disable avengemedia/danklinux
