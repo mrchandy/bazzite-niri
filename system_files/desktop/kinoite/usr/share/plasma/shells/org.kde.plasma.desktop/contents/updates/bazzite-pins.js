@@ -19,10 +19,10 @@ for (let i = 0; i < allPanels.length; ++i) {
                     "preferred://browser",
                     "applications:steam.desktop",
                     "applications:net.lutris.Lutris.desktop",
-                    "applications:org.gnome.Ptyxis.desktop",
+                    "applications:org.kde.konsole.desktop",
                     "applications:io.github.kolunmi.Bazaar.desktop",
                     "preferred://filemanager"
-                ].join(","));
+                ]);
                 widget.reloadConfig();
             }
         }
