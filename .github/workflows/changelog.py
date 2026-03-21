@@ -54,6 +54,13 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **DMS** | {pkgrel:dms} |
 | **Quickshell** | {pkgrel:quickshell-git} |
 | **Bazaar** | {pkgrel:bazaar} |
+<<<<<<< HEAD
+=======
+| **Gnome** | {pkgrel:gnome-control-center-filesystem} |
+| **KDE** | {pkgrel:plasma-desktop} |
+| **Nvidia** | {pkgrel:nvidia-kmod-common} |
+| **Nvidia LTS** | {pkgrel:nvidia-kmod-common-lts} |
+>>>>>>> upstream/main
 
 {changes}
 
@@ -74,7 +81,10 @@ BLACKLIST_VERSIONS = [
     "mesa-filesystem",
     "gamescope",
     "bazaar",
+<<<<<<< HEAD
     "niri",
+=======
+>>>>>>> upstream/main
     "gnome-control-center-filesystem",
     "plasma-desktop",
     "atheros-firmware",
