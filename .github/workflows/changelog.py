@@ -49,16 +49,11 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Kernel** | {pkgrel:kernel} |
 | **Firmware** | {pkgrel:atheros-firmware} |
 | **Mesa** | {pkgrel:mesa-filesystem} |
-| **Gamescope** | {pkgrel:terra-gamescope} |
-| **Gamescope Session** | {pkgrel:gamescope-session} |
-| **InputPlumber** | {pkgrel:inputplumber} |
-| **OpenGamepadUI** | {pkgrel:opengamepadui} |
-| **PowerStation** | {pkgrel:powerstation} |
-| **SteamOS-Manager** | {pkgrel:steamos-manager-powerstation} |
-| **Bazaar** | {pkgrel:bazaar} |
+| **Gamescope** | {pkgrel:gamescope} |
 | **Niri** | {pkgrel:niri} |
 | **DMS** | {pkgrel:dms} |
 | **Quickshell** | {pkgrel:quickshell-git} |
+| **Bazaar** | {pkgrel:bazaar} |
 
 {changes}
 
@@ -77,12 +72,7 @@ This is an automatically generated changelog for release `{curr}`."""
 BLACKLIST_VERSIONS = [
     "kernel",
     "mesa-filesystem",
-    "terra-gamescope",
-    "gamescope-session",
-    "inputplumber",
-    "powerstation",
-    "steamos-manager-powerstation",
-    "opengamepadui",
+    "gamescope",
     "bazaar",
     "niri",
     "gnome-control-center-filesystem",
@@ -170,7 +160,7 @@ def get_packages(manifests: dict[str, Any]):
     packages = {}
     for img, manifest in manifests.items():
         try:
-            packages[img] = json.loads(manifest["Labels"]["ostree.rechunk.info"])[
+            packages[img] = json.loads(manifest["Labels"]["dev.hhd.rechunk.info"])[
                 "packages"
             ]
         except Exception as e:
