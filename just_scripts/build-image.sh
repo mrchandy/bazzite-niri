@@ -35,7 +35,7 @@ fi
 $container_mgr build -f Containerfile \
     --build-arg="IMAGE_NAME=${tag}" \
     --build-arg="BASE_IMAGE_NAME=${base_image}" \
-    --build-arg="KERNEL_FLAVOR=bazzite" \
+    --build-arg="KERNEL_FLAVOR=ogc" \
     --build-arg="SOURCE_IMAGE=${base_image}-${flavor}" \
     --build-arg="FEDORA_VERSION=${latest}" \
     --target="${target}" \
