@@ -48,6 +48,7 @@ dnf -y install \
 
 dnf -y copr enable avengemedia/danklinux
 dnf -y copr disable avengemedia/danklinux
+dnf -y --enablerepo copr:copr.fedorainfracloud.org:avengemedia:danklinux install quickshell-git
 dnf -y copr enable avengemedia/dms
 dnf -y copr disable avengemedia/dms
 dnf -y \
@@ -55,7 +56,6 @@ dnf -y \
     --enablerepo copr:copr.fedorainfracloud.org:avengemedia:dms \
     --enablerepo copr:copr.fedorainfracloud.org:avengemedia:danklinux \
     install --setopt=install_weak_deps=False --skip-broken \
-    quickshell-git \
     dms \
     dms-cli \
     dms-greeter \

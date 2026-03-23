@@ -252,6 +252,8 @@ jobs:
           set -eoux pipefail
           if [[ "${IMAGE}" =~ gnome ]]; then
             CACHE_NAME="gnome"
+          elif [[ "${IMAGE}" =~ niri ]]; then
+            CACHE_NAME="niri"
           else
             CACHE_NAME="kde"
           fi
