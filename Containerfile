@@ -34,7 +34,7 @@ ARG ARCH="${ARCH:-x86_64}"
 ARG BASE_IMAGE="${BASE_IMAGE:-ghcr.io/ublue-os/${BASE_IMAGE_NAME}-main:${FEDORA_VERSION}}"
 ARG NVIDIA_BASE="${NVIDIA_BASE:-bazzite}"
 ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
-ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.8-200.ogc.fc43.x86_64}"
+ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.10-ogc1.2.fc43.x86_64}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
@@ -67,6 +67,7 @@ RUN --mount=type=bind,src=firmware,dst=/ctx/firmware \
     --mount=type=tmpfs,dst=/tmp \
     cp -a /ctx/firmware/. /tmp/firmware && \
     find /tmp/firmware -type f -exec setfattr -n user.component -v "bazzite-nonfree" {} + && \
+    rm -rf /tmp/firmware/.git && \
     cp -a /tmp/firmware/. / && \
     rm -rf /tmp/firmware
 
@@ -77,6 +78,19 @@ RUN find /tmp/brew_files -type f -printf '/%P\0' > /tmp/brew_list.txt && \
     cp -a /tmp/brew_files/. / && \
     xargs -0 -a /tmp/brew_list.txt setfattr -h -n user.component -v "homebrew" && \
     rm -rf /tmp/brew_files /tmp/brew_list.txt
+
+# Install kernel
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=bind,from=akmods,src=/kernel-rpms,dst=/tmp/kernel-rpms \
+    --mount=type=bind,from=akmods,src=/rpms/common,dst=/tmp/rpms/common \
+    --mount=type=bind,from=akmods,src=/rpms/kmods,dst=/tmp/rpms/kmods \
+    --mount=type=bind,from=akmods-extra,src=/rpms/extra,dst=/tmp/rpms/extra \
+    --mount=type=bind,from=akmods-extra,src=/rpms/kmods,dst=/tmp/rpms/kmods-extra \
+    --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/install-kernel-akmods && \
+    /ctx/cleanup
 
 # Setup Copr repos
 RUN --mount=type=cache,dst=/var/cache \
@@ -93,7 +107,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os/packages \
         ublue-os/obs-vkcapture \
         ycollet/audinux \
-        lizardbyte/beta \
         che/nerd-fonts; \
     do \
         echo "Enabling copr: $copr"; \
@@ -112,34 +125,11 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager setopt "terra-mesa".enabled=false && \
     dnf5 -y config-manager setopt "*bazzite*".priority=2 && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
-    dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" && \
+    dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" "*rpmfusion*".enabled=0 && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
     dnf5 -y config-manager setopt "*audinux*".exclude="kernel*" && \
     dnf5 -y config-manager setopt "*staging*".exclude="scx-tools scx-scheds kf6-* mesa* mutter*" && \
     /ctx/cleanup
-
-# Install kernel
-RUN --mount=type=cache,dst=/var/cache \
-    --mount=type=cache,dst=/var/log \
-    --mount=type=bind,from=akmods,src=/kernel-rpms,dst=/tmp/kernel-rpms \
-    --mount=type=bind,from=akmods,src=/rpms/common,dst=/tmp/rpms/common \
-    --mount=type=bind,from=akmods,src=/rpms/kmods,dst=/tmp/rpms/kmods \
-    --mount=type=bind,from=akmods-extra,src=/rpms/extra,dst=/tmp/rpms/extra \
-    --mount=type=bind,from=akmods-extra,src=/rpms/kmods,dst=/tmp/rpms/kmods-extra \
-    --mount=type=bind,from=ctx,source=/,target=/ctx \
-    --mount=type=tmpfs,dst=/tmp \
-    rm -rf /.git && \
-    dnf5 -y config-manager setopt "*rpmfusion*".enabled=0 && \
-    /ctx/install-kernel-akmods && \
-    /ctx/cleanup
-
-# This should upgrade mesa drivers before Bazzite because their step was failing
-RUN dnf5 config-manager setopt "terra-mesa".enabled=true && \
-    dnf5 -y --enablerepo=terra-mesa upgrade \
-        mesa-filesystem \
-        mesa-dri-drivers \
-        mesa-va-drivers \
-        mesa-vulkan-drivers
 
 # Install patched fwupd
 # Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland
@@ -153,7 +143,7 @@ RUN --mount=type=cache,dst=/var/cache \
         mesa-va-drivers && \
     declare -A toswap=( \
         ["copr:copr.fedorainfracloud.org:ublue-os:bazzite"]="wireplumber" \
-        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="pipewire bluez xorg-x11-server-Xwayland NetworkManager" \
+        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez xorg-x11-server-Xwayland NetworkManager" \
         ["terra-mesa"]="mesa-filesystem" \
         ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
     ) && \
@@ -161,15 +151,6 @@ RUN --mount=type=cache,dst=/var/cache \
         for package in ${toswap[$repo]}; do dnf5 -y swap --from-repo=$repo $package $package; done; \
     done && unset -v toswap repo package && \
     dnf5 versionlock add \
-        pipewire \
-        pipewire-alsa \
-        pipewire-gstreamer \
-        pipewire-jack-audio-connection-kit \
-        pipewire-jack-audio-connection-kit-libs \
-        pipewire-libs \
-        pipewire-plugin-libcamera \
-        pipewire-pulseaudio \
-        pipewire-utils \
         wireplumber \
         wireplumber-libs \
         bluez \
@@ -190,6 +171,10 @@ RUN --mount=type=cache,dst=/var/cache \
         NetworkManager \
         NetworkManager-wifi \
         NetworkManager-libnm && \
+    dnf5 --enable-repo=terra-mesa -y install \
+        mesa-libOpenCL \
+        intel-opencl \
+        clinfo && \
     dnf5 -y install \
         libfreeaptx && \
     dnf5 -y install --enable-repo="*rpmfusion*" --disable-repo="*fedora-multimedia*" \
@@ -238,7 +223,6 @@ RUN --mount=type=cache,dst=/var/cache \
         lato-fonts \
         fira-code-fonts \
         nerd-fonts \
-        Sunshine \
         python3-pip \
         libadwaita \
         bees \
@@ -263,6 +247,7 @@ RUN --mount=type=cache,dst=/var/cache \
         tailscale \
         webapp-manager \
         btop \
+        amdsmi \
         duf \
         fish \
         lshw \
@@ -295,33 +280,24 @@ RUN --mount=type=cache,dst=/var/cache \
         snapper \
         btrfs-assistant \
         edk2-ovmf \
-        qemu \
-        libvirt \
-        guestfs-tools \
         lsb_release \
         uupd \
         ds-inhibit \
-        rocm-hip \
-        rocm-opencl \
-        rocm-clinfo \
         waydroid \
         cage \
         wlr-randr \
         gmodpatchtool \
         bazzite-portal \
         ls-iommu && \
+    ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
     systemctl mask wpa_supplicant.service && \
     systemctl mask systemd-remount-fs.service && \
     systemctl disable iwd.service && \
-    chmod +x /usr/bin/framework_tool && \
+    mkdir -p /usr/lib/extest/ && \
+    /ctx/ghcurl "$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest | jq -r '.assets[] | select(.name| test(".*so$")).browser_download_url')" -Lo /usr/lib/extest/libextest.so && \
+    setfattr -n user.component -v "extest" /usr/lib/extest/libextest.so && \
     sed -i 's|uupd|& --disable-module-distrobox|' /usr/lib/systemd/system/uupd.service && \
-    setcap 'cap_sys_admin+p' $(readlink -f /usr/bin/sunshine) && \
-    dnf5 -y --setopt=install_weak_deps=False install \
-        rocm-hip \
-        rocm-opencl \
-        rocm-clinfo \
-        rocm-smi && \
     mkdir -p /etc/xdg/autostart && \
     sed -i~ -E 's/=.\$\(command -v (nft|ip6?tables-legacy).*/=/g' /usr/lib/waydroid/data/scripts/waydroid-net.sh && \
     sed -i 's/ --xdg-runtime=\\"${XDG_RUNTIME_DIR}\\"//g' /usr/bin/btrfs-assistant-launcher && \
@@ -402,6 +378,7 @@ RUN --mount=type=cache,dst=/var/cache \
             kio-extras \
             krunner-bazaar \
             krdc \
+            tesseract-devel \
             tesseract-langpack-spa \
             tesseract-langpack-deu \
             tesseract-langpack-jpn \
@@ -453,6 +430,7 @@ RUN --mount=type=cache,dst=/var/cache \
             gnome-shell-extension-user-theme \
             gnome-shell-extension-gsconnect \
             rom-properties-gtk4 \
+            rom-properties-localsearch3 \
             ibus-mozc \
             openssh-askpass \
             firewall-config && \
@@ -473,6 +451,8 @@ RUN --mount=type=cache,dst=/var/cache \
         /ctx/build-gnome-extensions && \
         systemctl enable dconf-update.service \
     ; fi && \
+    dnf5 -y install \
+        rom-properties-utils && \
     /ctx/cleanup
 
 # ublue-os-media-automount-udev, mount non-removable device partitions automatically under /media/media-automount/
@@ -565,7 +545,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os/packages \
         ublue-os/obs-vkcapture \
         ycollet/audinux \
-        lizardbyte/beta \
         che/nerd-fonts; \
     do \
         dnf5 -y copr disable $copr; \
@@ -701,6 +680,7 @@ RUN --mount=type=cache,dst=/var/cache \
         xorg-x11-server-Xvfb \
         python-vdf \
         python-crcmod && \
+    chmod +x /usr/share/gamescope-session-plus/gamescope-session-plus && \
     git clone https://github.com/bazzite-org/jupiter-dock-updater-bin.git \
         --depth 1 \
         /tmp/jupiter-dock-updater-bin && \
@@ -778,9 +758,6 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable wireplumber-sysconf.service && \
     systemctl enable pipewire-workaround.service && \
     systemctl enable pipewire-sysconf.service && \
-    systemctl enable cec-onboot.service && \
-    systemctl enable cec-onpoweroff.service && \
-    systemctl enable cec-onsleep.service && \
     systemctl enable bazzite-tdpfix.service && \
     systemctl --global disable sdgyrodsu.service && \
     systemctl disable input-remapper.service && \
@@ -819,11 +796,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
     dnf5 config-manager unsetopt skip_if_unavailable && \
     dnf5 -y remove \
-        nvidia-gpu-firmware \
-        rocm-hip \
-        rocm-opencl \
-        rocm-clinfo \
-        rocm-smi && \
+        nvidia-gpu-firmware && \
     /ctx/cleanup
 
 # Install NVIDIA driver
