@@ -28,13 +28,13 @@
 # https://github.com/ublue-os/image-template
 
 ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-kinoite}"
-ARG FEDORA_VERSION="${FEDORA_VERSION:-43}"
+ARG FEDORA_VERSION="${FEDORA_VERSION:-44}"
 ARG ARCH="${ARCH:-x86_64}"
 
 ARG BASE_IMAGE="${BASE_IMAGE:-ghcr.io/ublue-os/${BASE_IMAGE_NAME}-main:${FEDORA_VERSION}}"
 ARG NVIDIA_BASE="${NVIDIA_BASE:-bazzite}"
 ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
-ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.11-ogc1.1.fc43.x86_64}"
+ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.11-ogc1.1.fc44.x86_64}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
@@ -143,7 +143,7 @@ RUN --mount=type=cache,dst=/var/cache \
         mesa-va-drivers && \
     declare -A toswap=( \
         ["copr:copr.fedorainfracloud.org:ublue-os:bazzite"]="wireplumber" \
-        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez xorg-x11-server-Xwayland NetworkManager" \
+        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez xorg-x11-server-Xwayland" \
         ["terra-mesa"]="mesa-filesystem" \
         ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
     ) && \
@@ -291,11 +291,12 @@ RUN --mount=type=cache,dst=/var/cache \
         ls-iommu && \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
-    systemctl mask wpa_supplicant.service && \
     systemctl mask systemd-remount-fs.service && \
     systemctl disable iwd.service && \
     mkdir -p /usr/lib/extest/ && \
     /ctx/ghcurl "$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest | jq -r '.assets[] | select(.name| test(".*so$")).browser_download_url')" -Lo /usr/lib/extest/libextest.so && \
+    /ctx/ghcurl "https://github.com/ykshek/Sunshine/raw/1347f9ef290c089b815cf186f7d361470bdb9ef7/src_assets/linux/misc/postinst" -Lo /usr/libexec/sunshine-postinst && \
+    chmod +x /usr/libexec/sunshine-postinst && \
     setfattr -n user.component -v "extest" /usr/lib/extest/libextest.so && \
     sed -i 's|uupd|& --disable-module-distrobox|' /usr/lib/systemd/system/uupd.service && \
     mkdir -p /etc/xdg/autostart && \
@@ -370,15 +371,18 @@ RUN --mount=type=cache,dst=/var/cache \
             kdeconnectd \
             kdeplasma-addons \
             rom-properties-kf6 \
+            fcitx5-chewing \
             fcitx5-mozc \
             fcitx5-chinese-addons \
             fcitx5-hangul \
+            fcitx5-m17n \
             kcm-fcitx5 \
             gnome-disk-utility \
             kio-extras \
             krunner-bazaar \
             krdc \
             tesseract-devel \
+            tesseract-langpack-eng \
             tesseract-langpack-spa \
             tesseract-langpack-deu \
             tesseract-langpack-jpn \
@@ -392,6 +396,8 @@ RUN --mount=type=cache,dst=/var/cache \
             tesseract-langpack-tur \
             tesseract-langpack-chi_sim \
             tesseract-langpack-chi_sim_vert \
+            tesseract-langpack-chi_tra \
+            tesseract-langpack-chi_tra_vert \
             tesseract-langpack-ces \
             tesseract-langpack-ell && \
         dnf5 -y remove \
@@ -715,7 +721,8 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=secret,id=GITHUB_TOKEN \
     mkdir -p /usr/share/gamescope-session-plus/ && \
     curl --retry 3 -Lo /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz https://large-package-sources.nobaraproject.org/bootstrap_steam.tar.gz && \
-    setfattr -n user.component -v "bazzite-nonfree" /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz && \
+    setfattr -n user.component -v "steam-bootstrap" /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz && \
+    setfattr -n user.update-interval -v "yearly" /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz && \
     mkdir -p /usr/share/sdl/ && \
     /ctx/ghcurl "https://raw.githubusercontent.com/mdqinc/SDL_GameControllerDB/refs/heads/master/gamecontrollerdb.txt" -Lo /usr/share/sdl/gamecontrollerdb.txt && \
     setfattr -n user.component -v "sdl2" /usr/share/sdl/gamecontrollerdb.txt && \
