@@ -54,6 +54,7 @@ ARG IMAGE_NAME="${IMAGE_NAME:-bazzite}"
 ARG IMAGE_VENDOR="${IMAGE_VENDOR:-ublue-os}"
 ARG IMAGE_BRANCH="${IMAGE_BRANCH:-stable}"
 ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-kinoite}"
+ARG FEDORA_VERSION="${FEDORA_VERSION:-44}"
 ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT}"
 ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
@@ -132,7 +133,7 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/cleanup
 
 # Install patched fwupd
-# Install Valve's patched Mesa, Pipewire, Bluez, and Xwayland
+# Install Valve's patched Mesa, Bluez, and Xwayland
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
@@ -205,7 +206,7 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
     dnf5 -y install \
-        $(/ctx/ghcurl https://api.github.com/repos/ublue-os/cicpoffs/releases/latest | jq -r '.assets[] | select(.name| test(".*rpm$")).browser_download_url') && \
+        $(/ctx/ghcurl https://api.github.com/repos/ublue-os/cicpoffs/releases/latest | jq -r --arg name "cicpoffs-fc${FEDORA_VERSION}.rpm" '.assets[] | select(.name == $name).browser_download_url') && \
     dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
         scx-scheds \
@@ -332,8 +333,6 @@ RUN --mount=type=cache,dst=/var/cache \
         mangohud.i686 \
         libobs_vkcapture.x86_64 \
         libobs_glcapture.x86_64 \
-        libobs_vkcapture.i686 \
-        libobs_glcapture.i686 \
         openxr && \
     dnf5 -y --enable-repo=terra-mesa --enable-repo=terra --setopt=install_weak_deps=False install \
         steam \
@@ -411,7 +410,9 @@ RUN --mount=type=cache,dst=/var/cache \
         sed -i '$r /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/bazzite-pins.js' /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
-        rm -f /usr/share/backgrounds/default.xml \
+        rm -f /usr/share/backgrounds/default.xml && \
+        mkdir -p /usr/share/wallpapers/bazzite/convergence/contents/images && \
+        ln -s /usr/share/wallpapers/convergence.jxl /usr/share/wallpapers/bazzite/convergence/contents/images/3940x2160.jxl \
     # --------------------------- INSTALL NIRI ------------------------------
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
     	./ctx/install-niri.sh && \
@@ -419,21 +420,10 @@ RUN --mount=type=cache,dst=/var/cache \
         /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
         setfattr -n user.component -v "exe-thumbnailer" /usr/share/thumbnailers/exe-thumbnailer.thumbnailer \
     ; else \
-        declare -A toswap=( \
-            ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="mutter gnome-shell" \
-        ) && \
-        for repo in "${!toswap[@]}"; do \
-            for package in ${toswap[$repo]}; do dnf5 -y swap --repo=$repo $package $package; done; \
-        done && unset -v toswap repo package && \
-        dnf5 versionlock add \
-            mutter \
-            gnome-shell \
-            gsettings-desktop-schemas && \
         dnf5 -y install \
             nautilus-gsconnect \
             steamdeck-backgrounds \
             steamdeck-gnome-presets \
-            gnome-randr-rust \
             gnome-shell-extension-user-theme \
             gnome-shell-extension-gsconnect \
             rom-properties-gtk4 \
