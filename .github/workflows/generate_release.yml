@@ -36,8 +36,8 @@ jobs:
       - name: Generate Release Text
         id: generate-release
         run: |
-          echo "title=" >> $GITHUB_OUTPUT
-          echo "tag=" >> $GITHUB_OUTPUT
+          echo "title=unstable-43.20260425 (F43.20260425)" >> $GITHUB_OUTPUT
+          echo "tag=unstable-43.20260425" >> $GITHUB_OUTPUT
           #python3 ./.github/workflows/changelog.py \
           #  "${{ steps.get-target.outputs.target }}" \
           #  ./output.env ./changelog.md --workdir . --handwritten "${{ github.event.inputs.handwritten }}"
