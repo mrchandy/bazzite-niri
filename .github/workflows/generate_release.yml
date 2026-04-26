@@ -36,18 +36,20 @@ jobs:
       - name: Generate Release Text
         id: generate-release
         run: |
-          python3 ./.github/workflows/changelog.py \
-            "${{ steps.get-target.outputs.target }}" \
-            ./output.env ./changelog.md --workdir . --handwritten "${{ github.event.inputs.handwritten }}"
-          source ./output.env
-          echo "title=${TITLE}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "title=" >> $GITHUB_OUTPUT
+          echo "tag=" >> $GITHUB_OUTPUT
+          #python3 ./.github/workflows/changelog.py \
+          #  "${{ steps.get-target.outputs.target }}" \
+          #  ./output.env ./changelog.md --workdir . --handwritten "${{ github.event.inputs.handwritten }}"
+          #source ./output.env
+          #echo "title=${TITLE}" >> $GITHUB_OUTPUT
+          #echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
         with:
           name: ${{ steps.generate-release.outputs.title }}
           tag_name: ${{ steps.generate-release.outputs.tag }}
-          body_path: ./changelog.md
+          body_path: ./.github/workflows/changelog.md
           make_latest: ${{ steps.get-target.outputs.target == 'stable' }}
           prerelease: ${{ steps.get-target.outputs.target != 'stable' }}
