@@ -1,4 +1,4 @@
-This is an automatically generated changelog for release `43.20260410`.
+This is an automatically generated changelog for release `43.20260426`.
 
 From previous `unstable` version `43.20260323` there have been the following changes. **One package per new version shown.**
 
@@ -82,5 +82,5 @@ For current users, type the following to rebase to this version:
 # For this branch (if latest):
 bazzite-rollback-helper rebase unstable
 # For this specific image:
-bazzite-rollback-helper rebase 43.20260410
+bazzite-rollback-helper rebase 43.20260426
 ```
