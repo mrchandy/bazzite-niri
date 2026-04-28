@@ -36,20 +36,18 @@ jobs:
       - name: Generate Release Text
         id: generate-release
         run: |
-          echo "title=unstable-43.20260426 (F43.20260426)" >> $GITHUB_OUTPUT
-          echo "tag=unstable-43.20260426" >> $GITHUB_OUTPUT
-          #python3 ./.github/workflows/changelog.py \
-          #  "${{ steps.get-target.outputs.target }}" \
-          #  ./output.env ./changelog.md --workdir . --handwritten "${{ github.event.inputs.handwritten }}"
-          #source ./output.env
-          #echo "title=${TITLE}" >> $GITHUB_OUTPUT
-          #echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          python3 ./.github/workflows/changelog.py \
+            "${{ steps.get-target.outputs.target }}" \
+            ./output.env ./changelog.md --workdir . --handwritten "${{ github.event.inputs.handwritten }}"
+          source ./output.env
+          echo "title=${TITLE}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
         with:
           name: ${{ steps.generate-release.outputs.title }}
           tag_name: ${{ steps.generate-release.outputs.tag }}
-          body_path: ./.github/workflows/changelog.md
+          body_path: ./changelog.md
           make_latest: ${{ steps.get-target.outputs.target == 'stable' }}
           prerelease: ${{ steps.get-target.outputs.target != 'stable' }}
