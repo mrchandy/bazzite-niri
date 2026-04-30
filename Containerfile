@@ -106,7 +106,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os/bazzite-multilib \
         ublue-os/staging \
         ublue-os/packages \
-        ublue-os/obs-vkcapture \
         ycollet/audinux \
         che/nerd-fonts; \
     do \
@@ -116,9 +115,6 @@ RUN --mount=type=cache,dst=/var/cache \
     done && unset -v copr && \
     dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras,-mesa} && \
     dnf5 -y config-manager addrepo --overwrite --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
-    dnf5 -y install \
-        https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/negativo17-fedora-multimedia.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-steam.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-rar.repo && \
@@ -126,7 +122,6 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager setopt "terra-mesa".enabled=false && \
     dnf5 -y config-manager setopt "*bazzite*".priority=2 && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
-    dnf5 -y config-manager setopt "*rpmfusion*".priority=5 "*rpmfusion*".exclude="mesa-*" "*rpmfusion*".enabled=0 && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
     dnf5 -y config-manager setopt "*audinux*".exclude="kernel*" && \
     dnf5 -y config-manager setopt "*staging*".exclude="scx-tools scx-scheds kf6-* mesa* mutter*" && \
@@ -178,11 +173,14 @@ RUN --mount=type=cache,dst=/var/cache \
         clinfo && \
     dnf5 -y install \
         libfreeaptx && \
-    dnf5 -y install --enable-repo="*rpmfusion*" --disable-repo="*fedora-multimedia*" \
-        libaacs \
-        libbdplus \
+    dnf5 -y install --enable-repo="*fedora-multimedia*" \
         libbluray \
-        libbluray-utils && \
+        libbluray-utils \
+        makemkv && \
+    ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libaacs.so.0 && \
+    ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libaacs.so.0.7.2 && \
+    ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libbdplus.so.0 && \
+    ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libbdplus.so.0.2.0 && \
     /ctx/cleanup
 
 # Remove unneeded packages
@@ -195,7 +193,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os-update-services \
         firefox \
         firefox-langpacks \
-        toolbox \
         htop && \
     /ctx/cleanup
 
@@ -213,6 +210,7 @@ RUN --mount=type=cache,dst=/var/cache \
         scx-tools && \
     dnf5 -y copr disable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
+        fuse-libs \
         uld \
         bazaar \
         iwd \
@@ -293,7 +291,7 @@ RUN --mount=type=cache,dst=/var/cache \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
     systemctl mask systemd-remount-fs.service && \
-    systemctl disable iwd.service && \
+    systemctl mask iwd.service && \
     mkdir -p /usr/lib/extest/ && \
     /ctx/ghcurl "$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest | jq -r '.assets[] | select(.name| test(".*so$")).browser_download_url')" -Lo /usr/lib/extest/libextest.so && \
     /ctx/ghcurl "https://github.com/ykshek/Sunshine/raw/1347f9ef290c089b815cf186f7d361470bdb9ef7/src_assets/linux/misc/postinst" -Lo /usr/libexec/sunshine-postinst && \
@@ -331,8 +329,8 @@ RUN --mount=type=cache,dst=/var/cache \
         vkBasalt.i686 \
         mangohud.x86_64 \
         mangohud.i686 \
-        libobs_vkcapture.x86_64 \
-        libobs_glcapture.x86_64 \
+        obs-studio-plugin-vkcapture-hook-libs.x86_64 \
+        obs-studio-plugin-vkcapture-hook-libs.i686 \
         openxr && \
     dnf5 -y --enable-repo=terra-mesa --enable-repo=terra --setopt=install_weak_deps=False install \
         steam \
@@ -490,6 +488,7 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/80-bazzite.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/81-bazzite-fixes.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/82-bazzite-apps.just\"" >> /usr/share/ublue-os/justfile && \
+    echo "import \"/usr/share/ublue-os/just/82-bazzite-cockpit.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/82-bazzite-beesd.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/82-bazzite-sunshine.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/82-bazzite-waydroid.just\"" >> /usr/share/ublue-os/justfile && \
@@ -540,7 +539,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os/bazzite-multilib \
         ublue-os/staging \
         ublue-os/packages \
-        ublue-os/obs-vkcapture \
         ycollet/audinux \
         che/nerd-fonts; \
     do \
@@ -618,7 +616,6 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y copr enable ublue-os/packages && \
     dnf5 -y copr enable ublue-os/bazzite && \
     dnf5 -y copr enable ublue-os/bazzite-multilib && \
-    dnf5 -y copr enable ublue-os/obs-vkcapture && \
     dnf5 -y copr enable ycollet/audinux && \
     dnf5 config-manager unsetopt skip_if_unavailable && \
     /ctx/cleanup
@@ -738,7 +735,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ublue-os/packages \
         ublue-os/bazzite \
         ublue-os/bazzite-multilib \
-        ublue-os/obs-vkcapture \
         ycollet/audinux; \
     do \
         dnf5 -y copr disable -y $copr; \
@@ -832,6 +828,9 @@ RUN --mount=type=cache,dst=/var/cache \
     ; fi && \
     systemctl disable supergfxd.service && \
     dnf5 config-manager setopt skip_if_unavailable=1 && \
+    if [ -f /etc/modprobe.d/nvidia-modeset.conf ]; then \
+      cp /etc/modprobe.d/nvidia-modeset.conf /usr/lib/modprobe.d/nvidia-modeset.conf \
+    ; fi && \
     /ctx/image-info && \
     /ctx/build-initramfs && \
     /ctx/finalize
