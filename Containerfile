@@ -37,8 +37,9 @@ ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
 ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.14-ogc1.1.fc44.x86_64}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 
-FROM ${KERNEL_REF} AS kernel
-FROM ${NVIDIA_REF} AS nvidia
+FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
+FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
+FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-nvidia
 
 FROM scratch AS ctx
 COPY build_files /
@@ -58,9 +59,8 @@ ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT}"
 ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
-RUN --mount=type=bind,target=/tmp/context \
-    cp -a /tmp/context/system_files/desktop/shared/. /tmp/context/system_files/desktop/${BASE_IMAGE_NAME}/. / && \
-    find /usr/share/ublue-os/docs -type f -exec setfattr -n user.component -v "ublue-docs" {} +
+COPY system_files/desktop/shared/ system_files/desktop/${BASE_IMAGE_NAME}/ /
+RUN find /usr/share/ublue-os/docs -type f -exec setfattr -n user.component -v "ublue-docs" {} +
 
 # Install needed firmware blobs
 RUN --mount=type=bind,src=firmware,dst=/ctx/firmware \
@@ -74,9 +74,11 @@ RUN --mount=type=bind,src=firmware,dst=/ctx/firmware \
 
 # Copy Homebrew files from the brew image
 ARG BREW_IMAGE=ghcr.io/ublue-os/brew:latest@sha256:ca91068f51ce663d495ccfc829352d6621ec95f6c7db447ade55023b222f9762
-RUN --mount=type=bind,from=${BREW_IMAGE},source=/system_files,target=/tmp/brew_source \
-    cp -a /tmp/brew_source/. / && \
-    find /tmp/brew_source -type f -printf '/%P\0' | xargs -0 setfattr -n user.component -v "homebrew"
+COPY --from=${BREW_IMAGE} /system_files/ /tmp/brew_files/
+RUN find /tmp/brew_files -type f -printf '/%P\0' > /tmp/brew_list.txt && \
+    cp -a /tmp/brew_files/. / && \
+    xargs -0 -a /tmp/brew_list.txt setfattr -h -n user.component -v "homebrew" && \
+    rm -rf /tmp/brew_files /tmp/brew_list.txt
 
 # Install kernel
 RUN --mount=type=cache,dst=/var/cache \
@@ -93,11 +95,12 @@ RUN --mount=type=cache,dst=/var/cache \
 
 # Setup Copr repos
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     mkdir -p /var/roothome && \
-    dnf5 -y install dnf5-plugins && \
+    dnf5 config-manager setopt keepcache=1 && \
     for copr in \
         ublue-os/bazzite \
         ublue-os/bazzite-multilib \
@@ -115,26 +118,22 @@ RUN --mount=type=cache,dst=/var/cache \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/negativo17-fedora-multimedia.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-steam.repo && \
     dnf5 -y config-manager addrepo --from-repofile=https://negativo17.org/repos/fedora-rar.repo && \
-    dnf5 -y config-manager addrepo --from-repofile=https://pkg.surfacelinux.com/fedora/linux-surface.repo && \
-    sed -i 's|baseurl=https://pkg.surfacelinux.com/fedora/f\$releasever/|baseurl=https://pkg.surfacelinux.com/fedora/f42/|' /etc/yum.repos.d/linux-surface.repo && \
-    dnf5 -y config-manager setopt "linux-surface".enabled=false && \
-    dnf5 -y config-manager setopt "*bazzite*".priority=1 && \
-    dnf5 -y config-manager setopt "*terra*".priority=3 "*terra*".exclude="nerd-fonts topgrade scx-tools scx-scheds steam python3-protobuf zlib-devel" && \
+    dnf5 -y config-manager setopt "*terra*".priority=1 "*terra*".exclude="nerd-fonts topgrade scx-tools scx-scheds python3-protobuf zlib-devel" && \
     dnf5 -y config-manager setopt "terra-mesa".enabled=false && \
+    dnf5 -y config-manager setopt "*bazzite*".priority=2 && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
     dnf5 -y config-manager setopt "*fedora*".exclude="mesa-* kernel-core-* kernel-modules-* kernel-uki-virt-*" && \
+    dnf5 -y config-manager setopt "*audinux*".exclude="kernel*" && \
     dnf5 -y config-manager setopt "*staging*".exclude="scx-tools scx-scheds kf6-* mesa* mutter*" && \
     /ctx/cleanup
 
 # Install patched fwupd
 # Install Valve's patched Mesa, Bluez, and Xwayland
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
-    dnf5 -y install --enable-repo="linux-surface" --allowerasing \
-        iptsd \
-        libwacom-surface && \
     dnf5 -y remove \
         pipewire-config-raop \
         mesa-va-drivers && \
@@ -187,6 +186,7 @@ RUN --mount=type=cache,dst=/var/cache \
 
 # Remove unneeded packages
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
@@ -201,7 +201,7 @@ RUN --mount=type=cache,dst=/var/cache \
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
-    --mount=type=tmpfs,dst=/tmp \ 
+    --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
     dnf5 -y install \
         $(/ctx/ghcurl https://api.github.com/repos/ublue-os/cicpoffs/releases/latest | jq -r --arg name "cicpoffs-fc${FEDORA_VERSION}.rpm" '.assets[] | select(.name == $name).browser_download_url') && \
@@ -257,7 +257,6 @@ RUN --mount=type=cache,dst=/var/cache \
         v4l-utils \
         yad \
         f3 \
-        pulseaudio-utils \
         lzip \
         p7zip \
         p7zip-plugins \
@@ -287,6 +286,7 @@ RUN --mount=type=cache,dst=/var/cache \
         waydroid \
         cage \
         wlr-randr \
+        gmodpatchtool \
         bazzite-portal \
         ls-iommu && \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
@@ -306,16 +306,17 @@ RUN --mount=type=cache,dst=/var/cache \
 
 # Install Steam & Lutris, plus supporting packages
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
-    dnf5 --enable-repo=terra-mesa -y install \
-        gamescope.x86_64 \
-        gamescope-libs.x86_64 \
-        gamescope-libs.i686 \
-        gamescope-shaders \
+    dnf5 --enable-repo=terra-mesa --enable-repo=terra -y install \
+        terra-gamescope.x86_64 \
+        terra-gamescope-libs.x86_64 \
+        terra-gamescope-libs.i686 \
         jupiter-sd-mounting-btrfs \
+        umu-wrapper \
         umu-launcher \
         dbus-x11 \
         xrandr \
@@ -332,7 +333,7 @@ RUN --mount=type=cache,dst=/var/cache \
         obs-studio-plugin-vkcapture-hook-libs.x86_64 \
         obs-studio-plugin-vkcapture-hook-libs.i686 \
         openxr && \
-    dnf5 -y --enable-repo=terra-mesa --setopt=install_weak_deps=False install \
+    dnf5 -y --enable-repo=terra-mesa --enable-repo=terra --setopt=install_weak_deps=False install \
         steam \
         lutris && \
     dnf5 -y remove \
@@ -344,6 +345,7 @@ RUN --mount=type=cache,dst=/var/cache \
 
 # Install ujust-picker from GitHub releases
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
@@ -395,8 +397,7 @@ RUN --mount=type=cache,dst=/var/cache \
             tesseract-langpack-chi_tra \
             tesseract-langpack-chi_tra_vert \
             tesseract-langpack-ces \
-            tesseract-langpack-ell \
-            ptyxis && \
+            tesseract-langpack-ell && \
         dnf5 -y remove \
             plasma-drkonqi \
             plasma-welcome \
@@ -406,8 +407,6 @@ RUN --mount=type=cache,dst=/var/cache \
             kde-partitionmanager \
             plasma-discover && \
         sed -i '$r /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/bazzite-pins.js' /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js && \
-        sed -i '/^Comment/d' /usr/share/applications/org.gnome.Ptyxis.desktop && \
-        sed -i 's@Exec=ptyxis@Exec=kde-ptyxis@g' /usr/share/applications/org.gnome.Ptyxis.desktop && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
         rm -f /usr/share/backgrounds/default.xml && \
@@ -417,7 +416,8 @@ RUN --mount=type=cache,dst=/var/cache \
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
     	./ctx/install-niri.sh && \
         ./ctx/install-nautilus.sh && \
-        /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer \
+        /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
+        setfattr -n user.component -v "exe-thumbnailer" /usr/share/thumbnailers/exe-thumbnailer.thumbnailer \
     ; else \
         dnf5 -y install \
             nautilus-gsconnect \
@@ -453,6 +453,7 @@ RUN --mount=type=cache,dst=/var/cache \
 
 # ublue-os-media-automount-udev, mount non-removable device partitions automatically under /media/media-automount/
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
@@ -504,8 +505,7 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/91-bazzite-decky.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/92-bazzite-verify.just\"" >> /usr/share/ublue-os/justfile && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
-        systemctl enable usr-share-sddm-themes.mount && \
-        sed -i 's@Exec=/usr/bin/ptyxis@Exec=/usr/bin/kde-ptyxis@g' /usr/share/dbus-1/services/org.gnome.Ptyxis.service \
+        systemctl enable usr-share-sddm-themes.mount \
     # ----------------------- ENABLE NIRI --------------------------
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
       ./ctx/enable-niri.sh \
@@ -528,12 +528,10 @@ RUN --mount=type=cache,dst=/var/cache \
         fedora-cisco-openh264 \
         fedora-steam \
         fedora-rar \
-        google-chrome \
         tailscale \
         _copr_ublue-os-akmods \
         terra \
         terra-extras \
-        negativo17-fedora-uld \
         negativo17-fedora-multimedia; \
     do \
         sed -i 's@enabled=1@enabled=0@g' /etc/yum.repos.d/$repo.repo; \
@@ -571,7 +569,6 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl --global enable bazzite-user-setup.service && \
     systemctl --global enable podman.socket && \
     systemctl --global enable systemd-tmpfiles-setup.service && \
-    systemctl --global disable sunshine.service && \
     systemctl disable waydroid-container.service && \
     systemctl enable greenboot-healthcheck.service && \
     systemctl enable greenboot-set-rollback-trigger.service && \
@@ -592,7 +589,7 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/build-initramfs && \
     /ctx/finalize
 
-RUN bootc container lint
+RUN --mount=type=tmpfs,target=/run --network=none bootc container lint
 
 ################
 # DECK BUILDS
@@ -611,9 +608,11 @@ COPY system_files/deck/shared system_files/deck/${BASE_IMAGE_NAME} /
 
 # Setup Copr repos
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
+    sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/_copr_ublue-os-akmods.repo && \
     dnf5 -y copr enable ublue-os/staging && \
     dnf5 -y copr enable ublue-os/packages && \
     dnf5 -y copr enable ublue-os/bazzite && \
@@ -647,21 +646,23 @@ RUN --mount=type=cache,dst=/var/cache \
 
 # Install new packages
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
-    dnf5 -y install \
+    dnf5 -y install --enable-repo=terra \
         jupiter-fan-control \
         jupiter-hw-support-btrfs \
         galileo-mura \
         steamdeck-dsp \
         powerbuttond \
-        $([[ "$IMAGE_BRANCH" == "unstable" || "$IMAGE_BRANCH" == "testing" ]] && echo "hhd-git" || echo "hhd") \
-        hhd-ui \
-        steamos-manager \
-        acpica-tools \
+        inputplumber \
+        gamescope-session-ogui-steam \
+        steamos-manager-powerstation \
+        steamos-manager-powerstation-gamescope-session-plus \
         vpower \
-        steam_notif_daemon \
+        steam-notif-daemon \
+        acpica-tools \
         sdgyrodsu \
         ibus-pinyin \
         ibus-table-chinese-cangjie \
@@ -698,10 +699,11 @@ RUN --mount=type=cache,dst=/var/cache \
         upower-libs && \
     /ctx/cleanup
 
-# Install Gamescope Session & Supporting changes
+# Install Gamescope Session Supporting changes
 # Add bootstrap_steam.tar.gz used by gamescope-session (Thanks GE & Nobara Project!)
 # Add sdl gamecontrollerdb used by handheld daemon for externals
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
@@ -713,14 +715,11 @@ RUN --mount=type=cache,dst=/var/cache \
     mkdir -p /usr/share/sdl/ && \
     /ctx/ghcurl "https://raw.githubusercontent.com/mdqinc/SDL_GameControllerDB/refs/heads/master/gamecontrollerdb.txt" -Lo /usr/share/sdl/gamecontrollerdb.txt && \
     setfattr -n user.component -v "sdl2" /usr/share/sdl/gamecontrollerdb.txt && \
-    dnf5 -y install \
-    --repo copr:copr.fedorainfracloud.org:ublue-os:bazzite \
-        gamescope-session-plus \
-        gamescope-session-steam && \
     /ctx/cleanup
 
 # Cleanup & Finalize
 RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
@@ -731,6 +730,7 @@ RUN --mount=type=cache,dst=/var/cache \
         sed -i 's/Exec=.*/Exec=systemctl start return-to-gamemode.service/' /etc/skel/Desktop/Return.desktop \
     ; fi && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/input-remapper-gtk.desktop && \
+    sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/_copr_ublue-os-akmods.repo && \
     for copr in \
         ublue-os/staging \
         ublue-os/packages \
@@ -747,7 +747,6 @@ RUN --mount=type=cache,dst=/var/cache \
         systemctl disable usr-share-sddm-themes.mount \
     ; fi && \
     { rm -v /usr/share/applications/bazzite-steam-bpm.desktop || true; } && \
-    systemctl enable hhd.service && \
     systemctl enable --global steamos-manager.service && \
     systemctl enable bazzite-autologin.service && \
     systemctl enable wireplumber-workaround.service && \
@@ -767,7 +766,7 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/build-initramfs && \
     /ctx/finalize
 
-RUN bootc container lint
+RUN --mount=type=tmpfs,target=/run --network=none bootc container lint
 
 ################
 # NVIDIA BUILDS
@@ -799,16 +798,20 @@ RUN --mount=type=cache,dst=/var/cache \
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=bind,from=akmods-nvidia,src=/rpms,dst=/tmp/rpms/nvidia \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
-    --mount=type=bind,from=nvidia,src=/,dst=/rpms/nvidia \
+    dnf5 config-manager setopt "terra-mesa".enabled=1 && \
     dnf5 -y copr enable ublue-os/staging && \
     dnf5 -y install \
         egl-wayland.x86_64 \
-        egl-wayland.i686 && \
-    /ctx/install-nvidia && \
+        egl-wayland.i686 \
+        egl-wayland2.x86_64 \
+        egl-wayland2.i686 && \
+    IMAGE_NAME="${BASE_IMAGE_NAME}" AKMODNV_PATH="/tmp/rpms/nvidia" MULTILIB=1 /tmp/rpms/nvidia/ublue-os/nvidia-install.sh && \
     rm -f /usr/share/vulkan/icd.d/nouveau_icd.*.json && \
     ln -s libnvidia-ml.so.1 /usr/lib64/libnvidia-ml.so && \
+    dnf5 config-manager setopt "terra-mesa".enabled=0 && \
     dnf5 -y copr disable ublue-os/staging && \
     /ctx/cleanup
 
@@ -833,4 +836,4 @@ RUN --mount=type=cache,dst=/var/cache \
     /ctx/build-initramfs && \
     /ctx/finalize
 
-RUN bootc container lint
+RUN --mount=type=tmpfs,target=/run --network=none bootc container lint
