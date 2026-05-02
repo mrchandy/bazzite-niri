@@ -34,7 +34,7 @@ ARG ARCH="${ARCH:-x86_64}"
 ARG BASE_IMAGE="${BASE_IMAGE:-ghcr.io/ublue-os/${BASE_IMAGE_NAME}-main:${FEDORA_VERSION}}"
 ARG NVIDIA_BASE="${NVIDIA_BASE:-bazzite}"
 ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
-ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.11-ogc1.1.fc44.x86_64}"
+ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.14-ogc1.1.fc44.x86_64}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 
 FROM ${KERNEL_REF} AS kernel
@@ -178,6 +178,7 @@ RUN --mount=type=cache,dst=/var/cache \
         libbluray \
         libbluray-utils \
         makemkv && \
+    desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/makemkv.desktop && \
     ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libaacs.so.0 && \
     ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libaacs.so.0.7.2 && \
     ln -sf /usr/lib64/libmmbd.so.0 /usr/lib64/libbdplus.so.0 && \
