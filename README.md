@@ -1,8 +1,6 @@
 ## Do Not Use 
 
-This is an image I'm using to learn more about bootc, and things can and will break. It is also my starting point into using Github/git.
-
-The unstable branch is using the OGC kernel! 😁
+This is an image I'm using to learn more about bootc, and things can and will break. It is also my starting point into using Github/git.😁
 
 ## Goals
 
