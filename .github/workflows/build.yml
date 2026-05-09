@@ -1,34 +1,32 @@
 name: Build Bazzite
 on:
-  schedule:
-    - cron: "40 4 * * 1" # 4:40 utc monday
-  pull_request:
-    branches:
-      - testing
-      - unstable
-    paths-ignore:
-      - "**.md"
-      - "**.txt"
-      - "installer/**"
-      - "repo_content/**"
-      - "spec_files/**"
-      - "post_install_files/**"
-      - "press_kit/**"
-      - "docs/**"
-      - ".github/workflows/build_iso*.yml"
-  push:
-    branches:
-      - testing
-      - unstable
-    paths-ignore:
-      - "**.md"
-      - "**.txt"
-      - "repo_content/**"
-      - "spec_files/**"
-      - "post_install_files/**"
-      - "press_kit/**"
-      - ".github/workflows/build_iso*.yml"
-  merge_group:
+  #pull_request:
+  #  branches:
+  #    - testing
+  #    - unstable
+  #  paths-ignore:
+  #    - "**.md"
+  #    - "**.txt"
+  #    - "installer/**"
+  #    - "repo_content/**"
+  #    - "spec_files/**"
+  #    - "post_install_files/**"
+  #    - "press_kit/**"
+  #    - "docs/**"
+  #    - ".github/workflows/build_iso*.yml"
+  #push:
+  #  branches:
+  #    - testing
+  #    - unstable
+  #  paths-ignore:
+  #    - "**.md"
+  #    - "**.txt"
+  #    - "repo_content/**"
+  #    - "spec_files/**"
+  #    - "post_install_files/**"
+  #    - "press_kit/**"
+  #    - ".github/workflows/build_iso*.yml"
+  #merge_group:
   workflow_dispatch:
     inputs:
       handwritten:
@@ -58,12 +56,7 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - bazzite
-          - bazzite-gnome
-          - bazzite-nvidia
-          - bazzite-gnome-nvidia
-          - bazzite-nvidia-open
-          - bazzite-gnome-nvidia-open
+          - bazzite-niri
         include:
           - fedora_version: 44
             kernel_flavor: ogc
@@ -104,6 +97,8 @@ jobs:
           IMAGE="${{ matrix.image }}"
           if [[ "$IMAGE" == *gnome* ]]; then
             BASE_IMAGE_NAME="silverblue"
+          elif [[ "$IMAGE" == *niri* ]]; then
+            BASE_IMAGE_NAME="base"
           else
             BASE_IMAGE_NAME="kinoite"
           fi
@@ -147,7 +142,7 @@ jobs:
           BASE_IMAGE="${PULL_REGISTRY}/$BASE_IMAGE_NAME-${{ matrix.base_image_flavor }}:${{ matrix.fedora_version }}"
           echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
 
-          IMAGEREF="$PULL_REGISTRY/${{ matrix.image }}:stable"
+          IMAGEREF="$PUSH_REGISTRY/${{ matrix.image }}:stable"
           echo "prev_ref=${IMAGEREF}" >> $GITHUB_OUTPUT
 
           AKMODS_TAG="${{ matrix.kernel_flavor }}-${{ matrix.fedora_version }}-${{ matrix.kernel_version }}"
@@ -579,15 +574,15 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/generate_release.yml
 
-  # kickoff_bazzite_dx:
-  #   runs-on: ubuntu-24.04
-  #   needs: [generate_release]
-  #   if: github.repository == 'ublue-os/bazzite' && github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-  #   steps:
-  #     - name: Kickoff Bazzite-DX
-  #       uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4
-  #       continue-on-error: true
-  #       with:
-  #         token: ${{ secrets.PAT }}
-  #         repository: ublue-os/bazzite-dx
-  #         event-type: build
+  #kickoff_bazzite_dx:
+  #  runs-on: ubuntu-24.04
+  #  needs: [generate_release]
+  #  if: github.repository == 'ublue-os/bazzite' && github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+  #  steps:
+  #    - name: Kickoff Bazzite-DX
+  #      uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4
+  #      continue-on-error: true
+  #      with:
+  #        token: ${{ secrets.PAT }}
+  #        repository: ublue-os/bazzite-dx
+  #        event-type: build

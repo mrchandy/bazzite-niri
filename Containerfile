@@ -414,6 +414,12 @@ RUN --mount=type=cache,dst=/var/cache \
         rm -f /usr/share/backgrounds/default.xml && \
         mkdir -p /usr/share/wallpapers/bazzite/convergence/contents/images && \
         ln -s /usr/share/wallpapers/convergence.jxl /usr/share/wallpapers/bazzite/convergence/contents/images/3940x2160.jxl \
+    # --------------------------- INSTALL NIRI ------------------------------
+    ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
+    	./ctx/install-niri.sh && \
+        ./ctx/install-nautilus.sh && \
+        /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
+        setfattr -n user.component -v "exe-thumbnailer" /usr/share/thumbnailers/exe-thumbnailer.thumbnailer \
     ; else \
         dnf5 -y install \
             nautilus-gsconnect \
@@ -502,6 +508,9 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/92-bazzite-verify.just\"" >> /usr/share/ublue-os/justfile && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
         systemctl enable usr-share-sddm-themes.mount \
+    # ----------------------- ENABLE NIRI --------------------------
+    ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
+      ./ctx/enable-niri.sh \
     ; else \
         mkdir -p "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
         cp "/usr/share/glib-2.0/schemas/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
@@ -567,7 +576,7 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable greenboot-set-rollback-trigger.service && \
     systemctl disable force-wol.service && \
     systemctl --global enable bazzite-dynamic-fixes.service && \
-    systemctl --global enable ntfs-nag.service && \
+    # ntfs-nag.service doesn't exist # systemctl --global enable ntfs-nag.service && \
     /ctx/ghcurl "https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf" -Lo /etc/dxvk-example.conf && \
     /ctx/ghcurl "https://raw.githubusercontent.com/ublue-os/waydroid-scripts/main/waydroid-choose-gpu.sh" -Lo /usr/bin/waydroid-choose-gpu && \
     chmod +x /usr/bin/waydroid-choose-gpu && \

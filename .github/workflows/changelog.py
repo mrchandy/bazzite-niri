@@ -8,15 +8,11 @@ from typing import Any
 import re
 from collections import defaultdict
 
-REGISTRY = "ghcr.io/ublue-os/"
+REGISTRY = "ghcr.io/mrchandy/"
+
 
 IMAGES = [
-    "bazzite",
-    "bazzite-gnome",
-    "bazzite-nvidia",
-    "bazzite-gnome-nvidia",
-    "bazzite-nvidia-open",
-    "bazzite-gnome-nvidia-open",
+    "bazzite-niri",
 ]
 
 RETRIES = 3
@@ -43,7 +39,7 @@ OTHER_NAMES = {
 COMMITS_FORMAT = (
     "### Commits\n| Hash | Subject | Author |\n| --- | --- | --- |{commits}\n\n"
 )
-COMMIT_FORMAT = "\n| **[{short}](https://github.com/ublue-os/bazzite/commit/{hash})** | {subject} | {author} |"
+COMMIT_FORMAT = "\n| **[{short}](https://github.com/mrchandy/bazzite-niri/commit/{hash})** | {subject} | {author} |"
 
 CHANGELOG_TITLE = "{tag}: {pretty}"
 CHANGELOG_FORMAT = """\
@@ -58,11 +54,15 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Firmware** | {pkgrel:atheros-firmware} |
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:terra-gamescope} |
+| **Gamescope Session** | {pkgrel:gamescope-session} |
+| **InputPlumber** | {pkgrel:inputplumber} |
+| **OpenGamepadUI** | {pkgrel:opengamepadui} |
+| **PowerStation** | {pkgrel:powerstation} |
+| **SteamOS-Manager** | {pkgrel:steamos-manager-powerstation} |
 | **Bazaar** | {pkgrel:bazaar} |
-| **Gnome** | {pkgrel:gnome-control-center-filesystem} |
-| **KDE** | {pkgrel:plasma-desktop} |
-| **Nvidia Open** | {pkgrel:nvidia-kmod-common} |
-| **Nvidia LTS** | {pkgrel:nvidia-kmod-common-lts} |
+| **Niri** | {pkgrel:niri} |
+| **DMS** | {pkgrel:dms} |
+| **Quickshell** | {pkgrel:quickshell-git} |
 
 {changes}
 
@@ -88,6 +88,7 @@ BLACKLIST_VERSIONS = [
     "steamos-manager-powerstation",
     "opengamepadui",
     "bazaar",
+    "niri",
     "gnome-control-center-filesystem",
     "plasma-desktop",
     "atheros-firmware",
@@ -108,6 +109,8 @@ def get_images():
 
         if "gnome" in img:
             de = "gnome"
+        elif "niri" in img:
+            de = "niri"
         else:
             de = "kde"
 
