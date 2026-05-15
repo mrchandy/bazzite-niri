@@ -34,7 +34,7 @@ ARG ARCH="${ARCH:-x86_64}"
 ARG BASE_IMAGE="${BASE_IMAGE:-ghcr.io/ublue-os/${BASE_IMAGE_NAME}-main:${FEDORA_VERSION}}"
 ARG NVIDIA_BASE="${NVIDIA_BASE:-bazzite}"
 ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
-ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.14-ogc3.1.fc44.x86_64}"
+ARG KERNEL_VERSION="${KERNEL_VERSION:-6.19.14-ogc5.1.fc44.x86_64}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
@@ -315,6 +315,7 @@ RUN --mount=type=cache,dst=/var/cache \
         terra-gamescope.x86_64 \
         terra-gamescope-libs.x86_64 \
         terra-gamescope-libs.i686 \
+        dmemcg-booster \
         jupiter-sd-mounting-btrfs \
         umu-wrapper \
         umu-launcher \
@@ -649,7 +650,6 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     dnf5 -y install --enable-repo=terra \
-        jupiter-fan-control \
         jupiter-hw-support-btrfs \
         galileo-mura \
         steamdeck-dsp \
@@ -658,7 +658,6 @@ RUN --mount=type=cache,dst=/var/cache \
         gamescope-session-ogui-steam \
         steamos-manager-powerstation \
         steamos-manager-powerstation-gamescope-session-plus \
-        vpower \
         steam-notif-daemon \
         acpica-tools \
         sdgyrodsu \
@@ -755,8 +754,6 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl --global disable sdgyrodsu.service && \
     systemctl disable input-remapper.service && \
     systemctl disable uupd.timer && \
-    systemctl disable jupiter-fan-control.service && \
-    systemctl disable vpower.service && \
     systemctl disable jupiter-biosupdate.service && \
     systemctl disable jupiter-controller-update.service && \
     dnf5 config-manager setopt skip_if_unavailable=1 && \
