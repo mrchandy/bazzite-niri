@@ -21,22 +21,14 @@ dnf -y install \
    brightnessctl \
    cava \
    chezmoi \
-   ddcutil \
-   git-core \
    gnome-disk-utility \
    xdg-desktop-portal-gnome \
-   xdg-desktop-portal-gtk \
    xdg-terminal-exec-nautilus \
-   xdg-user-dirs \
-   accountsservice \
    gnome-keyring \
    gnome-keyring-pam \
    adw-gtk3-theme \
    greetd \
    greetd-selinux \
-   input-remapper \
-   wl-clipboard \
-   xwayland-satellite \
    tuned \
    tuned-ppd \
    playerctl \
