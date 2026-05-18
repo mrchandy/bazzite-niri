@@ -21,6 +21,7 @@ dnf -y install \
    brightnessctl \
    cava \
    chezmoi \
+   libquadmath \
    gnome-disk-utility \
    xdg-desktop-portal-gnome \
    xdg-terminal-exec-nautilus \
