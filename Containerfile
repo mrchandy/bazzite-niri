@@ -260,7 +260,8 @@ RUN --mount=type=cache,dst=/var/cache \
         iwd \
         greenboot \
         greenboot-default-health-checks \
-        ublue-os-selinux-workarounds \
+        ublue-os-selinux-workaround \
+        bazzite_updater \
         ScopeBuddy \
         twitter-twemoji-fonts \
         google-noto-sans-cjk-fonts \
@@ -573,7 +574,7 @@ RUN --mount=type=cache,dst=/var/cache \
         rm -r /tmp/bazzite-schema-test \
     # ----------------------- ENABLE NIRI --------------------------
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
-      ./ctx/enable-niri.sh \   
+      ./ctx/enable-niri.sh \
     ; fi && \
     sed -i 's/stage/none/g' /etc/rpm-ostreed.conf && \
     for repo in \
@@ -624,13 +625,10 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable greenboot-set-rollback-trigger.service && \
     systemctl disable force-wol.service && \
     systemctl --global enable bazzite-dynamic-fixes.service && \
-<<<<<<< HEAD
-    # ntfs-nag.service doesn't exist # systemctl --global enable ntfs-nag.service && \
-=======
-    systemctl --global enable ntfs-nag.service && \
+    # Don't want/need ntfs-nag
+    #systemctl --global enable ntfs-nag.service && \
     systemctl enable dmemcg-booster-system.service && \
     systemctl --global enable dmemcg-booster-user.service && \
->>>>>>> upstream/main
     /ctx/ghcurl "https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf" -Lo /etc/dxvk-example.conf && \
     /ctx/ghcurl "https://raw.githubusercontent.com/ublue-os/waydroid-scripts/main/waydroid-choose-gpu.sh" -Lo /usr/bin/waydroid-choose-gpu && \
     chmod +x /usr/bin/waydroid-choose-gpu && \
