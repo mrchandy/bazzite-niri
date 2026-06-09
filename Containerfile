@@ -36,6 +36,8 @@ ARG NVIDIA_BASE="${NVIDIA_BASE:-bazzite}"
 ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
 ARG KERNEL_VERSION="${KERNEL_VERSION:-7.0.9-ogc3.2.fc44.x86_64}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
+ARG LINUX_CEC_REF="218fd8194fbf2641b1646ed44d69ef76eb6c57fd"
+ARG INPUTATTACH_CEC_UNITS_REF="cbd910971a6712a7aa6c5e7f5714fd0a4bffc417"
 
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
@@ -43,6 +45,44 @@ FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}
 
 FROM scratch AS ctx
 COPY build_files /
+
+FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS linux-cec-builder
+ARG LINUX_CEC_REF
+RUN dnf5 -y install \
+        cargo \
+        dbus-devel \
+        git \
+        make \
+        pkgconf-pkg-config \
+        rust \
+        systemd-devel \
+        systemd-rpm-macros && \
+    git clone https://gitlab.steamos.cloud/holo/linux-cec.git /tmp/linux-cec && \
+    cd /tmp/linux-cec && \
+    git checkout "${LINUX_CEC_REF}" && \
+    make && \
+    make DESTDIR=/out PREFIX=/usr \
+        UDEV_RULES_DIR=/usr/lib/udev/rules.d \
+        SYSTEMD_USER_UNIT_DIR=/usr/lib/systemd/user \
+        DBUS_INTERFACES_DIR=/usr/share/dbus-1/interfaces \
+        DBUS_SESSION_BUS_SERVICES_DIR=/usr/share/dbus-1/services \
+        install && \
+    rm -rf /tmp/linux-cec /var/cache/dnf /var/log/dnf*
+
+FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS inputattach-cec-units-builder
+ARG INPUTATTACH_CEC_UNITS_REF
+RUN dnf5 -y install \
+        git \
+        make \
+        pkgconf-pkg-config && \
+    git clone https://gitlab.steamos.cloud/holo/inputattach-cec-units.git /tmp/inputattach-cec-units && \
+    cd /tmp/inputattach-cec-units && \
+    git checkout "${INPUTATTACH_CEC_UNITS_REF}" && \
+    make DESTDIR=/out PREFIX=/usr \
+        UDEV_RULES_DIR=/usr/lib/udev/rules.d \
+        SYSTEMD_SYSTEM_UNIT_DIR=/usr/lib/systemd/system \
+        install && \
+    rm -rf /tmp/inputattach-cec-units /var/cache/dnf /var/log/dnf*
 
 ################
 # DESKTOP BUILDS
@@ -60,6 +100,8 @@ ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
 COPY system_files/desktop/shared/ system_files/desktop/${BASE_IMAGE_NAME}/ /
+COPY --from=linux-cec-builder /out/ /
+COPY --from=inputattach-cec-units-builder /out/ /
 RUN find /usr/share/ublue-os/docs -type f -exec setfattr -n user.component -v "ublue-docs" {} +
 
 # Install needed firmware blobs
@@ -116,7 +158,7 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras,-mesa} && \
     dnf5 -y config-manager addrepo --overwrite --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/negativo17-fedora-multimedia.repo && \
-    dnf5 -y config-manager setopt "*terra*".priority=1 "*terra*".exclude="nerd-fonts scx-tools scx-scheds python3-protobuf zlib-devel" && \
+    dnf5 -y config-manager setopt "*terra*".priority=1 "*terra*".exclude="nerd-fonts scx-tools scx-scheds python3-protobuf zlib-devel uupd" && \
     dnf5 -y config-manager setopt "terra-mesa".enabled=false && \
     dnf5 -y config-manager setopt "*bazzite*".priority=2 && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
@@ -218,6 +260,7 @@ RUN --mount=type=cache,dst=/var/cache \
         iwd \
         greenboot \
         greenboot-default-health-checks \
+        ublue-os-selinux-workarounds \
         ScopeBuddy \
         twitter-twemoji-fonts \
         google-noto-sans-cjk-fonts \
@@ -242,7 +285,6 @@ RUN --mount=type=cache,dst=/var/cache \
         framework-system \
         udica \
         ladspa-caps-plugins \
-        ladspa-noise-suppression-for-voice \
         pipewire-module-filter-chain-sofa \
         python3-icoextract \
         tailscale \
@@ -255,6 +297,7 @@ RUN --mount=type=cache,dst=/var/cache \
         xdotool \
         wmctrl \
         libcec \
+        linuxconsoletools \
         v4l-utils \
         yad \
         f3 \
@@ -264,6 +307,7 @@ RUN --mount=type=cache,dst=/var/cache \
         rar \
         libxcrypt-compat \
         vulkan-tools \
+        vulkan-low-latency-layer \
         xwiimote-ng \
         fastfetch \
         glow \
@@ -311,6 +355,16 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
+    dnf5 -y install \
+        dmemcg-booster && \
+    if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
+        dnf5 -y install \
+            plasma-foreground-booster-dmemcg \
+    ; else \
+        dnf5 -y swap \
+        --repo terra-extras \
+            uresourced uresourced-dmemcg \
+    ; fi && \
     dnf5 --enable-repo=terra-mesa --enable-repo=terra -y install \
         terra-gamescope.x86_64 \
         terra-gamescope-libs.x86_64 \
@@ -504,12 +558,7 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/90-bazzite-de.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/91-bazzite-decky.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/92-bazzite-verify.just\"" >> /usr/share/ublue-os/justfile && \
-    if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
-        systemctl enable usr-share-sddm-themes.mount \
-    # ----------------------- ENABLE NIRI --------------------------
-    ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
-      ./ctx/enable-niri.sh \
-    ; else \
+    if grep -q "silverblue" <<< "${BASE_IMAGE_NAME}"; then \
         mkdir -p "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
         cp "/usr/share/glib-2.0/schemas/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
         find "/etc/dconf/db/distro.d/" -maxdepth 1 -type f -exec cp {} "/usr/share/ublue-os/dconfs/desktop-silverblue/" \; && \
@@ -522,6 +571,9 @@ RUN --mount=type=cache,dst=/var/cache \
         glib-compile-schemas --strict /tmp/bazzite-schema-test && \
         glib-compile-schemas /usr/share/glib-2.0/schemas &>/dev/null && \
         rm -r /tmp/bazzite-schema-test \
+    # ----------------------- ENABLE NIRI --------------------------
+    ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
+      ./ctx/enable-niri.sh \   
     ; fi && \
     sed -i 's/stage/none/g' /etc/rpm-ostreed.conf && \
     for repo in \
@@ -572,7 +624,13 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable greenboot-set-rollback-trigger.service && \
     systemctl disable force-wol.service && \
     systemctl --global enable bazzite-dynamic-fixes.service && \
+<<<<<<< HEAD
     # ntfs-nag.service doesn't exist # systemctl --global enable ntfs-nag.service && \
+=======
+    systemctl --global enable ntfs-nag.service && \
+    systemctl enable dmemcg-booster-system.service && \
+    systemctl --global enable dmemcg-booster-user.service && \
+>>>>>>> upstream/main
     /ctx/ghcurl "https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf" -Lo /etc/dxvk-example.conf && \
     /ctx/ghcurl "https://raw.githubusercontent.com/ublue-os/waydroid-scripts/main/waydroid-choose-gpu.sh" -Lo /usr/bin/waydroid-choose-gpu && \
     chmod +x /usr/bin/waydroid-choose-gpu && \
@@ -624,22 +682,28 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
+    dnf5 -y install \
+        sddm && \
     dnf5 -y remove \
-        jupiter-sd-mounting-btrfs && \
+        jupiter-sd-mounting-btrfs \
+        ds-inhibit \
+        plasma-login-manager && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
         dnf5 -y remove \
             steamdeck-kde-presets-desktop && \
        dnf5 -y install \
             steamdeck-kde-presets \
     ; else \
-        dnf5 -y install \
-            sddm && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
         rm -f /usr/share/backgrounds/default.xml && \
         dnf5 -y remove \
             malcontent-control \
     ; fi && \
+    if grep -q "silverblue" <<< "${BASE_IMAGE_NAME}"; then \
+        systemctl disable gdm.service \
+    ; fi && \
+    systemctl enable sddm.service && \
     /ctx/cleanup
 
 # Install new packages
@@ -674,6 +738,7 @@ RUN --mount=type=cache,dst=/var/cache \
         python-vdf \
         python-crcmod && \
     chmod +x /usr/share/gamescope-session-plus/gamescope-session-plus && \
+    sed -i 's/- xbox-elite/- deck/g' /usr/share/inputplumber/devices/50-steam_deck.yaml && \
     git clone https://github.com/bazzite-org/jupiter-dock-updater-bin.git \
         --depth 1 \
         /tmp/jupiter-dock-updater-bin && \
@@ -725,7 +790,10 @@ RUN --mount=type=cache,dst=/var/cache \
     mv "/etc/skel/.config/autostart/steam.desktop" "/etc/xdg/autostart/steam.desktop" && \
     sed -i 's@Exec=waydroid first-launch@Exec=/usr/bin/waydroid-launcher first-launch\nX-Steam-Library-Capsule=/usr/share/applications/Waydroid/capsule.png\nX-Steam-Library-Hero=/usr/share/applications/Waydroid/hero.png\nX-Steam-Library-Logo=/usr/share/applications/Waydroid/logo.png\nX-Steam-Library-StoreCapsule=/usr/share/applications/Waydroid/store-logo.png\nX-Steam-Controller-Template=Desktop@g' /usr/share/applications/Waydroid.desktop && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
-        sed -i 's/Exec=.*/Exec=systemctl start return-to-gamemode.service/' /etc/skel/Desktop/Return.desktop \
+        sed -i 's|Exec=.*|Exec=/usr/bin/return-to-gamemode|' /etc/skel/Desktop/Return.desktop && \
+        printf "\n[session]\ndesktop = \"plasma.desktop\"\n" >> /usr/share/steamos-manager/platform.toml \
+    ; else \
+        printf "\n[session]\ndesktop = \"gnome.desktop\"\n" >> /usr/share/steamos-manager/platform.toml \
     ; fi && \
     sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/input-remapper-gtk.desktop && \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/_copr_ublue-os-akmods.repo && \
@@ -738,14 +806,10 @@ RUN --mount=type=cache,dst=/var/cache \
     do \
         dnf5 -y copr disable -y $copr; \
     done && unset -v copr && \
-    if grep -q "silverblue" <<< "${BASE_IMAGE_NAME}"; then \
-        systemctl disable gdm.service && \
-        systemctl enable sddm.service \
-    ; else \
-        systemctl disable usr-share-sddm-themes.mount \
-    ; fi && \
     { rm -v /usr/share/applications/bazzite-steam-bpm.desktop || true; } && \
     systemctl enable --global steamos-manager.service && \
+    systemctl enable steamos-manager.service && \
+    systemctl enable inputplumber.service && \
     systemctl enable bazzite-autologin.service && \
     systemctl enable wireplumber-workaround.service && \
     systemctl enable wireplumber-sysconf.service && \
@@ -753,6 +817,7 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable pipewire-sysconf.service && \
     systemctl enable bazzite-tdpfix.service && \
     systemctl --global disable sdgyrodsu.service && \
+    systemctl --global enable steamos-powerbuttond.service && \
     systemctl disable input-remapper.service && \
     systemctl disable uupd.timer && \
     systemctl disable jupiter-fan-control.service && \
@@ -806,6 +871,12 @@ RUN --mount=type=cache,dst=/var/cache \
         egl-wayland.i686 \
         egl-wayland2.x86_64 \
         egl-wayland2.i686 && \
+    declare -A toswap=( \
+        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="kwin" \
+    ) && \
+    for repo in "${!toswap[@]}"; do \
+        for package in ${toswap[$repo]}; do dnf5 -y swap --from-repo=$repo $package $package; done; \
+    done && unset -v toswap repo package && \
     IMAGE_NAME="${BASE_IMAGE_NAME}" AKMODNV_PATH="/tmp/rpms/nvidia" MULTILIB=1 /tmp/rpms/nvidia/ublue-os/nvidia-install.sh && \
     rm -f /usr/share/vulkan/icd.d/nouveau_icd.*.json && \
     ln -s libnvidia-ml.so.1 /usr/lib64/libnvidia-ml.so && \
