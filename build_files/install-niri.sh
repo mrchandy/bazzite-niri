@@ -54,6 +54,7 @@ dnf -y \
     dms-greeter \
     dgop \
     danksearch \
+    dankcalendar-git \
     matugen \
     cliphist
 
