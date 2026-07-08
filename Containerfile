@@ -179,7 +179,7 @@ RUN --mount=type=cache,dst=/var/cache \
         mesa-va-drivers && \
     declare -A toswap=( \
         ["copr:copr.fedorainfracloud.org:ublue-os:bazzite"]="wireplumber" \
-        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez xorg-x11-server-Xwayland" \
+        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez bluez-cups bluez-libs bluez-obexd xorg-x11-server-Xwayland" \
         ["terra-mesa"]="mesa-filesystem" \
         ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
     ) && \
