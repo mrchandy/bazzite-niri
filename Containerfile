@@ -387,7 +387,7 @@ RUN --mount=type=cache,dst=/var/cache \
         obs-studio-plugin-vkcapture-hook-libs.x86_64 \
         obs-studio-plugin-vkcapture-hook-libs.i686 \
         openxr && \
-    dnf5 -y --enable-repo=terra-mesa --enable-repo=terra --setopt=install_weak_deps=False install \
+    dnf5 -y --disableexcludes=plus+* --enable-repo=terra-mesa --enable-repo=terra --setopt=install_weak_deps=False install \
         steam \
         lutris && \
     dnf5 -y remove \
