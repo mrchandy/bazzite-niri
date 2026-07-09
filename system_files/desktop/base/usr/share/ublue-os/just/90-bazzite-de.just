@@ -8,7 +8,7 @@ _zdots-reset FILE:
 
 _zdots-override-all:
     #!/usr/bin/env bash
-    chezmoi apply --force -S "/usr/share/zirconium/zdots" --verbose --config "$HOME/.config/zirconium/chezmoi/chezmoi.toml" 
+    chezmoi apply --force -S "/usr/share/zirconium/zdots" --verbose --config "$HOME/.config/zirconium/chezmoi/chezmoi.toml"
 
 _reset-niri:
     #!/usr/bin/env bash
@@ -36,9 +36,9 @@ enable-dcal ACTION="":
     elif [ "$OPTION" == "" ]; then
         # Display current status
         if [ "$DCAL_STATUS" == "Enabled" ]; then
-            echo -e "\n${bold}dcal${normal} is ${green}$DSEARCH_STATUS${normal}\n"
+            echo -e "\n${bold}dcal${normal} is ${green}$DCAL_STATUS${normal}\n"
         else
-            echo -e "\n${bold}dcal${normal} is ${yellow}$DSEARCH_STATUS${normal}\n"
+            echo -e "\n${bold}dcal${normal} is ${yellow}$DCAL_STATUS${normal}\n"
         fi
         echo "Choose an option:"
         OPTION=$(ugum choose "Enable dcal" "Disable dcal" "Exit without saving")
