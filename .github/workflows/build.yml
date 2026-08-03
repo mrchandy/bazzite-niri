@@ -60,7 +60,7 @@ jobs:
         include:
           - fedora_version: 44
             kernel_flavor: ogc
-            kernel_version: 7.0.9-ogc3.2.fc44.x86_64
+            kernel_version: 7.1.5-ogc5.1.fc44.x86_64
             base_image_flavor: main
             arch: x86_64
     steps:
@@ -153,7 +153,7 @@ jobs:
 
       # Checkout push-to-registry action GitHub repository
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           submodules: recursive
 
@@ -278,7 +278,7 @@ jobs:
           echo "allow_cache_write=${ALLOW_CACHE_WRITE}" >> "$GITHUB_OUTPUT"
 
       - name: Restore DNF package cache
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           CACHE_NAME: ${{ steps.cache-prep.outputs.cache_name }}
           ALLOW_CACHE_WRITE: ${{ steps.cache-prep.outputs.allow_cache_write }}
@@ -309,7 +309,7 @@ jobs:
 
       - name: Save DNF package cache
         if: steps.cache-prep.outputs.allow_cache_write == 'true'
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           CACHE_NAME: ${{ steps.cache-prep.outputs.cache_name }}
           ALLOW_CACHE_WRITE: ${{ steps.cache-prep.outputs.allow_cache_write }}
@@ -456,12 +456,19 @@ jobs:
 
       - name: Install dgoss
         run: |
-          curl -L \
-            https://github.com/goss-org/goss/releases/latest/download/goss-linux-amd64 \
-            -o /usr/local/bin/goss
+          set -euo pipefail
+          GOSS_VERSION=v0.4.10
+          # goss release tarballs use linux_x86_64 naming for amd64 systems.
+          curl -fL \
+            "https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss_${GOSS_VERSION#v}_linux_x86_64.tar.gz" \
+            -o /tmp/goss.tar.gz
+          tar -xzf /tmp/goss.tar.gz -C /usr/local/bin goss
+          test -f /usr/local/bin/goss || { echo "Error: /usr/local/bin/goss binary not found after extraction"; exit 1; }
           chmod +rx /usr/local/bin/goss
-          curl -L \
-            https://github.com/goss-org/goss/releases/latest/download/dgoss \
+          /usr/local/bin/goss --version >/dev/null
+          rm -f /tmp/goss.tar.gz
+          curl -fL \
+            "https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/dgoss" \
             -o /usr/local/bin/dgoss
           chmod +rx /usr/local/bin/dgoss
 
@@ -507,7 +514,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
-          cosign-release: "v2.6.1"
+          cosign-release: "v2.6.4"
 
       - name: Sign container image
         if: github.event_name != 'pull_request'
@@ -518,7 +525,7 @@ jobs:
 
       - name: Install ORAS
         if: github.event_name != 'pull_request'
-        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
       - name: Login to GitHub Container Registry with ORAS
         if: github.event_name != 'pull_request'
@@ -555,7 +562,7 @@ jobs:
 
       - name: Attestation
         if: github.event_name != 'pull_request'
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
         with:
           subject-name: ${{ steps.base.outputs.output_image }}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -570,6 +577,31 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/generate_release.yml
 
+  #kickoff_gamemode_news:
+  #  name: Build Game Mode Announcements
+  #  runs-on: ubuntu-24.04
+  #  needs: [generate_release]
+  #  if: github.repository == 'ublue-os/bazzite' && github.event_name != 'pull_request'
+  #  steps:
+  #    - name: Get target branch
+  #      id: get-target
+  #      run: |
+  #        TARGET="${{ github.ref }}"
+  #        TARGET="${TARGET##*/}"
+  #        if [ "$TARGET" = "main" ]; then
+  #          TARGET="stable"
+  #        fi
+  #        echo "target=$TARGET" >> $GITHUB_OUTPUT
+  #
+  #    - name: Kickoff Game Mode Announcements
+  #      uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4
+  #      continue-on-error: true
+  #      with:
+  #        token: ${{ secrets.PAT }}
+  #        repository: ublue-os/bazzite-gamemode-news
+  #        event-type: build-announcements
+  #        client-payload: '{"branch": "${{ steps.get-target.outputs.target }}"}'
+  #
   #kickoff_bazzite_dx:
   #  runs-on: ubuntu-24.04
   #  needs: [generate_release]

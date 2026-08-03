@@ -34,10 +34,8 @@ ARG ARCH="${ARCH:-x86_64}"
 ARG BASE_IMAGE="${BASE_IMAGE:-ghcr.io/ublue-os/${BASE_IMAGE_NAME}-main:${FEDORA_VERSION}}"
 ARG NVIDIA_BASE="${NVIDIA_BASE:-bazzite}"
 ARG KERNEL_FLAVOR="${KERNEL_FLAVOR:-ogc}"
-ARG KERNEL_VERSION="${KERNEL_VERSION:-7.0.9-ogc3.2.fc44.x86_64}"
+ARG KERNEL_VERSION="${KERNEL_VERSION:-7.0.9-ogc3.2.fc${FEDORA_VERSION}.${ARCH}}"
 ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
-ARG LINUX_CEC_REF="218fd8194fbf2641b1646ed44d69ef76eb6c57fd"
-ARG INPUTATTACH_CEC_UNITS_REF="cbd910971a6712a7aa6c5e7f5714fd0a4bffc417"
 
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
@@ -45,44 +43,6 @@ FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}
 
 FROM scratch AS ctx
 COPY build_files /
-
-FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS linux-cec-builder
-ARG LINUX_CEC_REF
-RUN dnf5 -y install \
-        cargo \
-        dbus-devel \
-        git \
-        make \
-        pkgconf-pkg-config \
-        rust \
-        systemd-devel \
-        systemd-rpm-macros && \
-    git clone https://gitlab.steamos.cloud/holo/linux-cec.git /tmp/linux-cec && \
-    cd /tmp/linux-cec && \
-    git checkout "${LINUX_CEC_REF}" && \
-    make && \
-    make DESTDIR=/out PREFIX=/usr \
-        UDEV_RULES_DIR=/usr/lib/udev/rules.d \
-        SYSTEMD_USER_UNIT_DIR=/usr/lib/systemd/user \
-        DBUS_INTERFACES_DIR=/usr/share/dbus-1/interfaces \
-        DBUS_SESSION_BUS_SERVICES_DIR=/usr/share/dbus-1/services \
-        install && \
-    rm -rf /tmp/linux-cec /var/cache/dnf /var/log/dnf*
-
-FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS inputattach-cec-units-builder
-ARG INPUTATTACH_CEC_UNITS_REF
-RUN dnf5 -y install \
-        git \
-        make \
-        pkgconf-pkg-config && \
-    git clone https://gitlab.steamos.cloud/holo/inputattach-cec-units.git /tmp/inputattach-cec-units && \
-    cd /tmp/inputattach-cec-units && \
-    git checkout "${INPUTATTACH_CEC_UNITS_REF}" && \
-    make DESTDIR=/out PREFIX=/usr \
-        UDEV_RULES_DIR=/usr/lib/udev/rules.d \
-        SYSTEMD_SYSTEM_UNIT_DIR=/usr/lib/systemd/system \
-        install && \
-    rm -rf /tmp/inputattach-cec-units /var/cache/dnf /var/log/dnf*
 
 ################
 # DESKTOP BUILDS
@@ -100,8 +60,6 @@ ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
 COPY system_files/desktop/shared/ system_files/desktop/${BASE_IMAGE_NAME}/ /
-COPY --from=linux-cec-builder /out/ /
-COPY --from=inputattach-cec-units-builder /out/ /
 RUN find /usr/share/ublue-os/docs -type f -exec setfattr -n user.component -v "ublue-docs" {} +
 
 # Install needed firmware blobs
@@ -167,7 +125,6 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager setopt "*staging*".exclude="scx-tools scx-scheds kf6-* mesa* mutter*" && \
     /ctx/cleanup
 
-# Install patched fwupd
 # Install Valve's patched Mesa, Bluez, and Xwayland
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/cache/libdnf5 \
@@ -181,7 +138,6 @@ RUN --mount=type=cache,dst=/var/cache \
         ["copr:copr.fedorainfracloud.org:ublue-os:bazzite"]="wireplumber" \
         ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez xorg-x11-server-Xwayland" \
         ["terra-mesa"]="mesa-filesystem" \
-        ["copr:copr.fedorainfracloud.org:ublue-os:staging"]="fwupd" \
     ) && \
     for repo in "${!toswap[@]}"; do \
         for package in ${toswap[$repo]}; do dnf5 -y swap --from-repo=$repo $package $package; done; \
@@ -200,10 +156,6 @@ RUN --mount=type=cache,dst=/var/cache \
         mesa-libGL \
         mesa-libgbm \
         mesa-vulkan-drivers \
-        fwupd \
-        fwupd-plugin-flashrom \
-        fwupd-plugin-modem-manager \
-        fwupd-plugin-uefi-capsule-data \
         NetworkManager \
         NetworkManager-wifi \
         NetworkManager-libnm && \
@@ -257,10 +209,10 @@ RUN --mount=type=cache,dst=/var/cache \
         fuse-libs \
         uld \
         bazaar \
-        iwd \
         greenboot \
         greenboot-default-health-checks \
         ublue-os-selinux-workarounds \
+        bazzite-updater \
         ScopeBuddy \
         twitter-twemoji-fonts \
         google-noto-sans-cjk-fonts \
@@ -297,6 +249,8 @@ RUN --mount=type=cache,dst=/var/cache \
         xdotool \
         wmctrl \
         libcec \
+        linux-cec \
+        inputattach-cec-units \
         linuxconsoletools \
         v4l-utils \
         yad \
@@ -319,7 +273,6 @@ RUN --mount=type=cache,dst=/var/cache \
         cockpit-system \
         cockpit-files \
         cockpit-storaged \
-        topgrade \
         ydotool \
         stress-ng \
         snapper \
@@ -333,11 +286,16 @@ RUN --mount=type=cache,dst=/var/cache \
         wlr-randr \
         gmodpatchtool \
         bazzite-portal \
+        kernel-tools \
         ls-iommu && \
+    dnf5 -y swap \
+        --repo terra \
+            switcheroo-control cardwire && \
+    dnf5 -y install --enable-repo=terra \
+        cardwire-gui && \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
     systemctl mask systemd-remount-fs.service && \
-    systemctl mask iwd.service && \
     mkdir -p /usr/lib/extest/ && \
     /ctx/ghcurl "$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest | jq -r '.assets[] | select(.name| test(".*so$")).browser_download_url')" -Lo /usr/lib/extest/libextest.so && \
     /ctx/ghcurl "https://github.com/ykshek/Sunshine/raw/1347f9ef290c089b815cf186f7d361470bdb9ef7/src_assets/linux/misc/postinst" -Lo /usr/libexec/sunshine-postinst && \
@@ -422,8 +380,11 @@ RUN --mount=type=cache,dst=/var/cache \
             steamdeck-kde-presets-desktop \
             kdeconnectd \
             kdeplasma-addons \
+            plasma-oxygen \
+            oxygen-icon-theme \
             rom-properties-kf6 \
             fcitx5-chewing \
+            fcitx5-table-extra \
             fcitx5-mozc \
             fcitx5-chinese-addons \
             fcitx5-hangul \
@@ -432,6 +393,7 @@ RUN --mount=type=cache,dst=/var/cache \
             gnome-disk-utility \
             kio-extras \
             krunner-bazaar \
+            krunner-yafti \
             krdc \
             tesseract-devel \
             tesseract-langpack-eng \
@@ -460,6 +422,7 @@ RUN --mount=type=cache,dst=/var/cache \
             kcharselect \
             kde-partitionmanager \
             plasma-discover && \
+        setcap 'cap_net_admin+ep' /usr/bin/kdeconnectd && \
         sed -i '$r /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/bazzite-pins.js' /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default.jxl && \
         ln -sf /usr/share/wallpapers/convergence.jxl /usr/share/backgrounds/default-dark.jxl && \
@@ -479,6 +442,7 @@ RUN --mount=type=cache,dst=/var/cache \
             steamdeck-gnome-presets \
             gnome-shell-extension-user-theme \
             gnome-shell-extension-gsconnect \
+            gnome-search-yafti \
             rom-properties-gtk4 \
             rom-properties-localsearch3 \
             ibus-mozc \
@@ -613,6 +577,7 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl enable uupd.timer && \
     systemctl enable incus-workaround.service && \
     systemctl enable bazzite-hardware-setup.service && \
+    systemctl enable bazzite-iwd-migration.service && \
     systemctl disable tailscaled.service && \
     systemctl enable dev-hugepages1G.mount && \
     systemctl enable ds-inhibit.service && \
@@ -628,6 +593,7 @@ RUN --mount=type=cache,dst=/var/cache \
     #systemctl --global enable ntfs-nag.service && \
     systemctl enable dmemcg-booster-system.service && \
     systemctl --global enable dmemcg-booster-user.service && \
+    systemctl enable cardwired.service && \
     /ctx/ghcurl "https://raw.githubusercontent.com/doitsujin/dxvk/master/dxvk.conf" -Lo /etc/dxvk-example.conf && \
     /ctx/ghcurl "https://raw.githubusercontent.com/ublue-os/waydroid-scripts/main/waydroid-choose-gpu.sh" -Lo /usr/bin/waydroid-choose-gpu && \
     chmod +x /usr/bin/waydroid-choose-gpu && \
@@ -719,6 +685,7 @@ RUN --mount=type=cache,dst=/var/cache \
         gamescope-session-ogui-steam \
         steamos-manager-powerstation \
         steamos-manager-powerstation-gamescope-session-plus \
+        gamemode-news-hook \
         vpower \
         steam-notif-daemon \
         acpica-tools \
@@ -736,7 +703,9 @@ RUN --mount=type=cache,dst=/var/cache \
         python-crcmod && \
     chmod +x /usr/share/gamescope-session-plus/gamescope-session-plus && \
     sed -i 's/- xbox-elite/- deck/g' /usr/share/inputplumber/devices/50-steam_deck.yaml && \
-    git clone https://github.com/bazzite-org/jupiter-dock-updater-bin.git \
+    sed -i 's/LOG_LEVEL=info/LOG_LEVEL=debug/g' /usr/lib/systemd/system/inputplumber.service && \
+    sed -i 's|^CLIENTCMD="opengamepadui --overlay-mode|/usr/libexec/hwsupport/non-valve-handheld-hardware \&\& CLIENTCMD="opengamepadui --accessibility disabled --overlay-mode|' /usr/share/gamescope-session-plus/sessions.d/ogui-steam && \
+    git clone https://gitlab.com/evlaV/jupiter-dock-updater-bin.git \
         --depth 1 \
         /tmp/jupiter-dock-updater-bin && \
     mv -v /tmp/jupiter-dock-updater-bin/packaged/usr/lib/jupiter-dock-updater /usr/libexec/jupiter-dock-updater && \
@@ -786,6 +755,7 @@ RUN --mount=type=cache,dst=/var/cache \
     mkdir -p "/etc/xdg/autostart" && \
     mv "/etc/skel/.config/autostart/steam.desktop" "/etc/xdg/autostart/steam.desktop" && \
     sed -i 's@Exec=waydroid first-launch@Exec=/usr/bin/waydroid-launcher first-launch\nX-Steam-Library-Capsule=/usr/share/applications/Waydroid/capsule.png\nX-Steam-Library-Hero=/usr/share/applications/Waydroid/hero.png\nX-Steam-Library-Logo=/usr/share/applications/Waydroid/logo.png\nX-Steam-Library-StoreCapsule=/usr/share/applications/Waydroid/store-logo.png\nX-Steam-Controller-Template=Desktop@g' /usr/share/applications/Waydroid.desktop && \
+    sed -i 's|/usr/lib/|/usr/libexec/|g' /usr/share/steamos-manager/platform.toml && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
         sed -i 's|Exec=.*|Exec=/usr/bin/return-to-gamemode|' /etc/skel/Desktop/Return.desktop && \
         printf "\n[session]\ndesktop = \"plasma.desktop\"\n" >> /usr/share/steamos-manager/platform.toml \
@@ -804,15 +774,23 @@ RUN --mount=type=cache,dst=/var/cache \
         dnf5 -y copr disable -y $copr; \
     done && unset -v copr && \
     { rm -v /usr/share/applications/bazzite-steam-bpm.desktop || true; } && \
+    sed -i "s|^github = .*|github = https://raw.githubusercontent.com/ublue-os/bazzite-gamemode-news/refs/heads/${IMAGE_BRANCH}/announcements.json|" /etc/gamemode-news-hook.conf && \
+    mkdir -p /usr/lib/systemd/user/gamescope-session-plus@.service.wants && \
+    ln -s /usr/lib/systemd/user/steamos-powerbuttond.service /usr/lib/systemd/user/gamescope-session-plus@.service.wants/ && \
+    sed -i 's/@steam/@ogui-steam/g' /usr/lib/systemd/user/gamemode-news-hook.service && \
     systemctl enable --global steamos-manager.service && \
+    systemctl enable --global steamos-manager-session-cleanup.service && \
+    systemctl enable --global steamos-manager-configure-cecd.service && \
     systemctl enable steamos-manager.service && \
     systemctl enable inputplumber.service && \
+    systemctl enable powerstation.service && \
     systemctl enable bazzite-autologin.service && \
     systemctl enable wireplumber-workaround.service && \
     systemctl enable wireplumber-sysconf.service && \
     systemctl enable pipewire-workaround.service && \
     systemctl enable pipewire-sysconf.service && \
     systemctl enable bazzite-tdpfix.service && \
+    systemctl --global enable gamemode-news-hook.service && \
     systemctl --global disable sdgyrodsu.service && \
     systemctl --global enable steamos-powerbuttond.service && \
     systemctl disable input-remapper.service && \
@@ -868,7 +846,7 @@ RUN --mount=type=cache,dst=/var/cache \
         egl-wayland.i686 \
         egl-wayland2.x86_64 \
         egl-wayland2.i686 && \
-    IMAGE_NAME="${BASE_IMAGE_NAME}" AKMODNV_PATH="/tmp/rpms/nvidia" MULTILIB=1 /tmp/rpms/nvidia/ublue-os/nvidia-install.sh && \
+    IMAGE_NAME="SKIP_PACKAGE_INSTALL" AKMODNV_PATH="/tmp/rpms/nvidia" MULTILIB=1 /tmp/rpms/nvidia/ublue-os/nvidia-install.sh && \
     rm -f /usr/share/vulkan/icd.d/nouveau_icd.*.json && \
     ln -s libnvidia-ml.so.1 /usr/lib64/libnvidia-ml.so && \
     dnf5 config-manager setopt "terra-mesa".enabled=0 && \
@@ -887,7 +865,9 @@ RUN --mount=type=cache,dst=/var/cache \
         dconf-override-converter to-dconf "/usr/share/ublue-os/dconfs/nvidia-silverblue/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" && \
         rm "/usr/share/ublue-os/dconfs/nvidia-silverblue/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" \
     ; fi && \
-    systemctl disable supergfxd.service && \
+    systemctl enable nvidia-powerd.service && \
+    systemctl enable ublue-nvidia-flatpak-runtime-sync && \
+    systemctl enable ublue-nvidia-flatpak-runtime-verify && \
     dnf5 config-manager setopt skip_if_unavailable=1 && \
     if [ -f /etc/modprobe.d/nvidia-modeset.conf ]; then \
       cp /etc/modprobe.d/nvidia-modeset.conf /usr/lib/modprobe.d/nvidia-modeset.conf \

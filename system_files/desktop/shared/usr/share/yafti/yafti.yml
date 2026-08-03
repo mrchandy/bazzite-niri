@@ -1,5 +1,34 @@
 title: Bazzite Portal
 screens:
+  - title: "Welcome!"
+    description: "Get to know Bazzite"
+    hidden: true
+    actions:
+      - id: "bazzite-documentation"
+        title: "Read the Bazzite Docs"
+        description: "New to Bazzite or Linux? Check out our helpful documentation. An offline version can be accessed by searching for ‘Documentation’ in your app menu."
+        default: false
+        script: "xdg-open https://docs.bazzite.gg/"
+      - id: "bazaar"
+        title: "Browse your Bazaar"
+        description: "Your software store! Check out our curated selection for apps like Discord, Heroic Games Launcher, or Viper."
+        default: false
+        script: "yad --info --title=\"Tip\" --image=dialog-information --text \"You can launch Bazaar anytime from your pinned apps or the app menu.\" --button=\"I get it\"!gtk-ok! && nohup setsid gtk4-launch io.github.kolunmi.Bazaar >&/dev/null"
+      - id: "bazzite-discord"
+        title: "Get help through Discord"
+        description: "Enter our official server for Bazzite user tech support. Bring your system logs!"
+        default: false
+        script: "xdg-open https://discord.gg/JQq48bYzrc"
+      - id: "bazzite-discourse"
+        title: "See our announcements in Discourse"
+        description: "Our forum posts for the latest breaking news on Bazzite!"
+        default: false
+        script: "xdg-open https://universal-blue.discourse.group/tags/c/bazzite/announcements/"
+      - id: "reddit"
+        title: "Join the official community on Reddit"
+        description: "Start a conversation, ask questions, or show off your Bazzite build!"
+        default: false
+        script: "xdg-open https://www.reddit.com/r/Bazzite/"
   - title: "Install Applications"
     description: "Get and configure software"
     actions:
@@ -247,6 +276,9 @@ screens:
           - id: "portal"
             label: "Open Sunshine Management Portal"
             script: "ujust setup-sunshine portal"
+          - id: "vmon"
+            label: "Setup Virtual Monitor"
+            script: "ujust setup-sunshine virtual-monitor"
       - id: "visual-studio-code-linux"
         title: "Visual Studio Code"
         description: "Open source code editor and debugger from Microsoft — installed using Brew."
@@ -259,7 +291,7 @@ screens:
         script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew tap ublue-os/tap && brew install --cask vscodium-linux'
       - id: "waydroid"
         title: "Waydroid"
-        description: "Android system in a container for app compatibility on Linux. Incompatible with NVIDIA drivers."
+        description: "Android system in a container, for app compatibility on Linux. Incompatible with NVIDIA drivers."
         default: false
         options:
           - id: "init"
@@ -389,6 +421,7 @@ screens:
     description: "System management and configuration"
     actions:
       - id: "update-bazzite"
+        hidden: true
         title: "Update your system"
         description: "Update Bazzite, Flatpak apps, and more."
         default: false
@@ -413,6 +446,12 @@ screens:
         description: "Remove the next image deployment, halting all updates or layering changes pending reboot."
         default: false
         script: 'rpm-ostree cleanup -p; status=$?; echo; echo "Press Enter to close..."; read -r _; exit $status'
+      - id: "update-nvidia-runtime"
+        title: "Update Nvidia Flatpak Runtime"
+        description: "Synchronizes Nvidia Flatpak Runtimes with system version. This is usually done automatically by the systemd service."
+        default: false
+        status_script: "ujust update-nvidia-runtime status"
+        script: "ujust update-nvidia-runtime upgrade"
       - id: "verify-image"
         title: "Move to a ‘verified’ image"
         description: "Detect if you are on an ‘unverified’ image of Bazzite and then, if applicable, move you to a signed one."
@@ -725,11 +764,6 @@ screens:
   - title: "Troubleshoot"
     description: "Tools and resources for diagnosing and fixing issues"
     actions:
-      - id: "bazzite-discord"
-        title: "Get help through Discord"
-        description: "Enter our official server for Bazzite user tech support. Bring in your system logs!"
-        default: false
-        script: "xdg-open https://discord.gg/JQq48bYzrc"
       - id: "get-logs"
         title: "Collect system logs"
         description: "Gather system records and information into a shareable web page report."
@@ -796,18 +830,18 @@ screens:
           - id: "native"
             label: "Route Natively"
             script: "ujust cec-mode native"
-      - id: "iwd"
-        title: "Change Wi-Fi system back-end"
-        description: "Toggle between the default «iwd» and legacy «wpa_supplicant» as the software Wi-Fi back-end."
+      - id: "inputplumber"
+        title: "Toggle InputPlumber"
+        description: "Useful for duplicate controller input on desktop/HTPC systems."
         default: false
-        status_script: "ujust iwd status"
+        status_script: 'bash -lc ''systemctl is-enabled --quiet inputplumber.service && echo enable || echo disable'''
         options:
           - id: "enable"
-            label: "Reset to «iwd»"
-            script: "ujust iwd enable"
+            label: "Enable InputPlumber"
+            script: "sudo systemctl enable --now inputplumber.service"
           - id: "disable"
-            label: "Switch to «wpa_supplicant»"
-            script: "ujust iwd disable"
+            label: "Disable InputPlumber"
+            script: "sudo systemctl disable --now inputplumber.service"
       - id: "intel-i915-sleep-fix"
         title: "Configure power saving for Intel HD Graphics"
         description: "Manage the «i915.enable_dc» power-saving setting for older i915 Intel GPUs with suspend issues."
@@ -857,3 +891,5 @@ screens:
         description: "Use the current parameters to generate a new GRUB configuration file. This will probe again for a Windows installation to appear as a boot option."
         default: false
         script: "ujust regenerate-grub"
+
+        
