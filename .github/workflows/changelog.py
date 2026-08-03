@@ -54,6 +54,11 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Firmware** | {pkgrel:atheros-firmware} |
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:terra-gamescope} |
+| **Gamescope Session** | {pkgrel:gamescope-session} |
+| **InputPlumber** | {pkgrel:inputplumber} |
+| **OpenGamepadUI** | {pkgrel:opengamepadui} |
+| **PowerStation** | {pkgrel:powerstation} |
+| **SteamOS-Manager** | {pkgrel:steamos-manager-powerstation} |
 | **Bazaar** | {pkgrel:bazaar} |
 | **Niri** | {pkgrel:niri} |
 | **DMS** | {pkgrel:dms} |
