@@ -8,7 +8,7 @@ _zdots-reset FILE:
 
 _zdots-override-all:
     #!/usr/bin/env bash
-    chezmoi apply --force -S "/usr/share/zirconium/zdots" --verbose --config "$HOME/.config/zirconium/chezmoi/chezmoi.toml" 
+    chezmoi apply --force -S "/usr/share/zirconium/zdots" --verbose --config "$HOME/.config/zirconium/chezmoi/chezmoi.toml"
 
 _reset-niri:
     #!/usr/bin/env bash
@@ -19,6 +19,47 @@ _reset-niri:
     if gum confirm "Are you sure you want to reset your niri configuration?" ; then
         zjust zdots-reset "${HOME}/.config/niri"
     fi
+
+enable-dcal ACTION="":
+    #!/usr/bin/env bash
+    source /usr/lib/ujust/ujust.sh
+    DCAL_STATUS="Disabled"
+    if systemctl --user is-enabled dcal | grep -q enabled; then
+      DCAL_STATUS="Enabled"
+    fi
+    OPTION="{{ ACTION }}"
+    if [ "$OPTION" == "help" ]; then
+        echo "Usage: ujust enable-dcal <option>"
+        echo " <option>: Specifiy the option to skip the interactive prompt"
+        echo " Use 'enable' to enable dcal service"
+        echo " Use 'disable' to disable dcal service"
+    elif [ "$OPTION" == "" ]; then
+        # Display current status
+        if [ "$DCAL_STATUS" == "Enabled" ]; then
+            echo -e "\n${bold}dcal${normal} is ${green}$DCAL_STATUS${normal}\n"
+        else
+            echo -e "\n${bold}dcal${normal} is ${yellow}$DCAL_STATUS${normal}\n"
+        fi
+        echo "Choose an option:"
+        OPTION=$(ugum choose "Enable dcal" "Disable dcal" "Exit without saving")
+    fi
+    case "$OPTION" in
+       "Enable dcal"|enable)
+         echo "Enabling dcal..."
+         systemctl --user enable --now dcal
+         echo -e "\n${bold}dcal is now ${green}Enabled${normal}."
+         echo " "
+         ;;
+       "Disable dcal"|disable)
+         echo -e "\nDisabling dcal..."
+         systemctl --user disable --now dcal
+         echo -e "\n${bold}dsearch${normal} is now ${yellow}Disabled${normal}."
+         echo " "
+         ;;
+       "Exit without saving"|*)
+         echo "No changes made."
+         ;;
+    esac
 
 update-greeter:
     dms greeter sync
