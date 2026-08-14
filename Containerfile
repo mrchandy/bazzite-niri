@@ -206,6 +206,7 @@ RUN --mount=type=cache,dst=/var/cache \
         scx-tools && \
     dnf5 -y copr disable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
+        bpftune \
         fuse-libs \
         uld \
         bazaar \
@@ -296,6 +297,7 @@ RUN --mount=type=cache,dst=/var/cache \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
     systemctl mask systemd-remount-fs.service && \
+    systemctl mask fedora-atomic-desktop-appstream-cache-refresh && \
     mkdir -p /usr/lib/extest/ && \
     /ctx/ghcurl "$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest | jq -r '.assets[] | select(.name| test(".*so$")).browser_download_url')" -Lo /usr/lib/extest/libextest.so && \
     /ctx/ghcurl "https://github.com/ykshek/Sunshine/raw/1347f9ef290c089b815cf186f7d361470bdb9ef7/src_assets/linux/misc/postinst" -Lo /usr/libexec/sunshine-postinst && \
@@ -443,6 +445,7 @@ RUN --mount=type=cache,dst=/var/cache \
             gnome-shell-extension-user-theme \
             gnome-shell-extension-gsconnect \
             gnome-search-yafti \
+            gnome-rounded-blur \
             rom-properties-gtk4 \
             rom-properties-localsearch3 \
             ibus-mozc \
@@ -498,9 +501,9 @@ RUN --mount=type=cache,dst=/var/cache \
     mkdir -p /etc/skel/.config/autostart/ && \
     cp "/usr/share/applications/steam.desktop" "/etc/skel/.config/autostart/steam.desktop" && \
     sed -i 's@/usr/bin/bazzite-steam %U@/usr/bin/bazzite-steam -silent %U@g' /etc/skel/.config/autostart/steam.desktop && \
-    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/nvtop.desktop && \
-    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/btop.desktop && \
-    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' /usr/share/applications/yad-icon-browser.desktop && \
+    desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/nvtop.desktop && \
+    desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/btop.desktop && \
+    desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/yad-icon-browser.desktop && \
     sed -i 's/#UserspaceHID.*/UserspaceHID=true/' /etc/bluetooth/input.conf && \
     sed -i "s|grub_probe\} --target=device /\`|grub_probe} --target=device /sysroot\`|g" /usr/bin/grub2-mkconfig && \
     rm -f /usr/lib/systemd/system/service.d/50-keep-warm.conf && \
@@ -522,6 +525,8 @@ RUN --mount=type=cache,dst=/var/cache \
     echo "import \"/usr/share/ublue-os/just/90-bazzite-de.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/91-bazzite-decky.just\"" >> /usr/share/ublue-os/justfile && \
     echo "import \"/usr/share/ublue-os/just/92-bazzite-verify.just\"" >> /usr/share/ublue-os/justfile && \
+    echo "import \"/usr/share/ublue-os/just/93-bazzite-update.just\"" >> /usr/share/ublue-os/justfile && \
+    echo "import \"/usr/share/ublue-os/just/94-bazzite-protonplus.just\"" >> /usr/share/ublue-os/justfile && \
     if grep -q "silverblue" <<< "${BASE_IMAGE_NAME}"; then \
         mkdir -p "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
         cp "/usr/share/glib-2.0/schemas/zz0-"*"-bazzite-desktop-silverblue-"*".gschema.override" "/usr/share/ublue-os/dconfs/desktop-silverblue/" && \
@@ -682,9 +687,9 @@ RUN --mount=type=cache,dst=/var/cache \
         steamdeck-dsp \
         powerbuttond \
         inputplumber \
+        hid-replay \
         gamescope-session-ogui-steam \
         steamos-manager-powerstation \
-        steamos-manager-powerstation-gamescope-session-plus \
         gamemode-news-hook \
         vpower \
         steam-notif-daemon \
@@ -775,15 +780,15 @@ RUN --mount=type=cache,dst=/var/cache \
     done && unset -v copr && \
     { rm -v /usr/share/applications/bazzite-steam-bpm.desktop || true; } && \
     sed -i "s|^github = .*|github = https://raw.githubusercontent.com/ublue-os/bazzite-gamemode-news/refs/heads/${IMAGE_BRANCH}/announcements.json|" /etc/gamemode-news-hook.conf && \
-    mkdir -p /usr/lib/systemd/user/gamescope-session-plus@.service.wants && \
-    ln -s /usr/lib/systemd/user/steamos-powerbuttond.service /usr/lib/systemd/user/gamescope-session-plus@.service.wants/ && \
+    mkdir -p /usr/lib/systemd/user/gamescope-session-plus@ogui-steam.service.wants && \
+    ln -s /usr/lib/systemd/user/steamos-powerbuttond.service /usr/lib/systemd/user/gamescope-session-plus@ogui-steam.service.wants/ && \
     sed -i 's/@steam/@ogui-steam/g' /usr/lib/systemd/user/gamemode-news-hook.service && \
+    sed -i '/^\[Service\]$/a KillSignal=SIGKILL\nTimeoutStopSec=2s\nTimeoutStopFailureMode=kill' /usr/lib/systemd/user/gamemode-news-hook.service && \
     systemctl enable --global steamos-manager.service && \
     systemctl enable --global steamos-manager-session-cleanup.service && \
     systemctl enable --global steamos-manager-configure-cecd.service && \
     systemctl enable steamos-manager.service && \
     systemctl enable inputplumber.service && \
-    systemctl enable powerstation.service && \
     systemctl enable bazzite-autologin.service && \
     systemctl enable wireplumber-workaround.service && \
     systemctl enable wireplumber-sysconf.service && \
@@ -793,6 +798,7 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl --global enable gamemode-news-hook.service && \
     systemctl --global disable sdgyrodsu.service && \
     systemctl --global enable steamos-powerbuttond.service && \
+    systemctl disable powerstation.service && \
     systemctl disable input-remapper.service && \
     systemctl disable uupd.timer && \
     systemctl disable jupiter-fan-control.service && \
@@ -865,6 +871,7 @@ RUN --mount=type=cache,dst=/var/cache \
         dconf-override-converter to-dconf "/usr/share/ublue-os/dconfs/nvidia-silverblue/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" && \
         rm "/usr/share/ublue-os/dconfs/nvidia-silverblue/zz0-"*"-bazzite-nvidia-silverblue-"*".gschema.override" \
     ; fi && \
+    sed -i 's/ nvidia_peermem\b//' /usr/lib/dracut/dracut.conf.d/99-nvidia.conf && \
     systemctl enable nvidia-powerd.service && \
     systemctl enable ublue-nvidia-flatpak-runtime-sync && \
     systemctl enable ublue-nvidia-flatpak-runtime-verify && \
