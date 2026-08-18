@@ -60,9 +60,15 @@ jobs:
         include:
           - fedora_version: 44
             kernel_flavor: ogc
-            kernel_version: 7.2.0-ogc3.rc7.1.fc44
+            kernel_version: 7.2-ogc1.1.fc44
             base_image_flavor: main
             arch: x86_64
+          - image: bazzite-nvidia
+            kernel_flavor: ogc-lts
+            kernel_version: 6.18.44-ogc1.1.fc44
+          - image: bazzite-gnome-nvidia
+            kernel_flavor: ogc-lts
+            kernel_version: 6.18.44-ogc1.1.fc44
     steps:
       - name: Show disk space
         run: sudo df -h
@@ -328,11 +334,7 @@ jobs:
             version="testing-${version}"
           fi
 
-          # Clean out labels from base image
           img=raw-img
-          container=$(buildah from $img)
-          buildah config --label "-" $container
-          buildah commit --identity-label=false --rm $container $img
 
           declare -A tags
           while read -r t; do
@@ -362,13 +364,14 @@ jobs:
             "ostree.linux=$kver"
           )
 
-          # Apply config to labels and annotations
-          container=$(buildah from $img)
+          : > "${RUNNER_TEMP}/labels.txt"
           for line in "${labels[@]}"; do
             [ -z "$line" ] && continue
-            buildah config --label "$line" --annotation "$line" "$container"
+            printf '%s\n' "$line" >> "${RUNNER_TEMP}/labels.txt"
           done
-          buildah commit --identity-label=false --rm $container $img
+
+          echo "Labels for the final image:"
+          cat "${RUNNER_TEMP}/labels.txt"
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
@@ -389,6 +392,13 @@ jobs:
           RECHUNK_DIR="$(mktemp -d "${RUNNER_TEMP}/rechunk-XXXXXX")"
           trap 'rm -rf "${RECHUNK_DIR}"' EXIT
 
+          label_args=()
+          while IFS= read -r line; do
+            if [ -n "$line" ]; then
+              label_args+=(--label "$line")
+            fi
+          done < "${RUNNER_TEMP}/labels.txt"
+
           podman run --rm \
               --pull=never \
               --privileged \
@@ -398,6 +408,7 @@ jobs:
               localhost/raw-img \
               compose build-chunked-oci \
               --bootc --max-layers 127 --format-version 2 \
+              "${label_args[@]}" \
               --rootfs /rpm-ostree --output oci-archive:/run/out/chunked.oci
 
           podman rmi -f localhost/raw-img
@@ -510,19 +521,26 @@ jobs:
             log_sum '# Push to GHCR result'
             log_sum '```'
 
-            for tag in ${VERSION} ${ALIAS_TAGS}; do
-              dest_image="${OUTPUT_IMAGE}:$tag"
+            push_version() {
               podman push --digestfile=/tmp/digestfile \
-                "${RECHUNK_REF#containers-storage:}" "docker://$dest_image"
-              log_sum "$dest_image"
-            done
-            log_sum '```'
+                "${RECHUNK_REF#containers-storage:}" "docker://${OUTPUT_IMAGE}:${VERSION}"
+            }
+            push_version
+            push_version
+            log_sum "${OUTPUT_IMAGE}:${VERSION}"
 
             digest="$(< /tmp/digestfile)"
             if [[ -z "$digest" ]]; then
               echo "push reported success but wrote no digest" >&2
               exit 1
             fi
+
+            for tag in ${ALIAS_TAGS}; do
+              skopeo copy "docker://${OUTPUT_IMAGE}@${digest}" "docker://${OUTPUT_IMAGE}:$tag"
+              log_sum "${OUTPUT_IMAGE}:$tag"
+            done
+            log_sum '```'
+
             echo "digest=${digest}" >> $GITHUB_OUTPUT
 
       - name: Install Cosign
