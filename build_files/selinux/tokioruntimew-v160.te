@@ -1,0 +1,13 @@
+
+module tokioruntimew-v160 1.0;
+
+require {
+	type root_t;
+	type xdm_t;
+	class file read;
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t root_t:file read;

@@ -1,0 +1,22 @@
+
+module unixchkpwd-v160 1.0;
+
+require {
+	type user_devpts_t;
+	type init_t;
+	type chkpwd_t;
+	type user_tty_device_t;
+	type xdm_t;
+	class chr_file { read write };
+	class process { rlimitinh siginh };
+}
+
+#============= chkpwd_t ==============
+allow chkpwd_t user_devpts_t:chr_file { read write };
+allow chkpwd_t user_tty_device_t:chr_file { read write };
+
+#============= init_t ==============
+allow init_t chkpwd_t:process siginh;
+
+#============= xdm_t ==============
+allow xdm_t chkpwd_t:process { rlimitinh siginh };

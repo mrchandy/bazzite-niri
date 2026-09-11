@@ -380,8 +380,9 @@ RUN --mount=type=cache,dst=/var/cache \
       /ctx/configure-kde \
     # --------------------------- INSTALL NIRI ------------------------------
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
-      	./ctx/install-niri.sh && \
-        ./ctx/install-nautilus.sh && \
+      	./ctx/install-niri && \
+        ./ctx/install-nautilus && \
+        ./ctx/selinux/dms-selinux-policies && \
         /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/master/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
         setfattr -n user.component -v "exe-thumbnailer" /usr/share/thumbnailers/exe-thumbnailer.thumbnailer \
     ; else \
@@ -490,7 +491,7 @@ RUN --mount=type=cache,dst=/var/cache \
         rm -r /tmp/bazzite-schema-test \
     # ----------------------- ENABLE NIRI --------------------------
     ; elif grep -q "base" <<< "${BASE_IMAGE_NAME}"; then \
-      ./ctx/enable-niri.sh \
+      ./ctx/enable-niri \
     ; fi && \
     sed -i 's/stage/none/g' /etc/rpm-ostreed.conf && \
     for repo in \

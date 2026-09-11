@@ -1,0 +1,21 @@
+
+module QSGRenderThread-v160 1.0;
+
+require {
+	type var_t;
+	type xdm_t;
+	type tetex_data_t;
+	class dir create;
+	class file { link map open rename setattr unlink write };
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t tetex_data_t:file { map open };
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:dir create;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:file { link rename setattr unlink write };

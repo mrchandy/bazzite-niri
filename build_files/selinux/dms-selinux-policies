@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -ouex pipefail
+
+# Install the selinux-policy-devel package to make the policies
+dnf -y install selinux-policy-devel
+
+# Set variables and ensure the target dir exists
+TE_HOME="/ctx/selinux"
+TARGETED_PKG_DIR="/usr/share/selinux/packages/targeted"
+mkdir -p "$TARGETED_PKG_DIR"
+
+# Install policy modules
+for te_file in /ctx/selinux/*.te; do
+    module_name=$(basename "$te_file" .te)
+    # Make the policy files
+    make -C $TE_HOME -f /usr/share/selinux/devel/Makefile "${module_name}.pp"
+    # Copy policy files to their home
+    cp "$TE_HOME/${module_name}.pp" "$TARGETED_PKG_DIR"
+    # Install the policy modules
+    semodule -n -X 300 -i "$TARGETED_PKG_DIR/${module_name}.pp"
+done
+
+# Remove the se-linux-policy-devel package when we are done
+dnf -y remove selinux-policy-devel

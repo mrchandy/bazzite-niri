@@ -1,0 +1,17 @@
+
+module pangofontcon-v160 1.0;
+
+require {
+	type var_t;
+	type xdm_t;
+	class dir create;
+	class file map;
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:dir create;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:file map;

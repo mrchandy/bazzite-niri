@@ -1,0 +1,17 @@
+
+module greetd-v160 1.0;
+
+require {
+	type unconfined_t;
+	type xdm_t;
+	type chkpwd_t;
+	class process noatsecure;
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t chkpwd_t:process noatsecure;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t unconfined_t:process noatsecure;
