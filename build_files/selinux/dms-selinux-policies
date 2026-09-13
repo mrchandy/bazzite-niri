@@ -5,25 +5,32 @@ set -ouex pipefail
 # Install the selinux-policy-devel package to make the policies
 dnf -y install selinux-policy-devel
 
-# Set variables and ensure the target dir exists
+# Set variables
 WRITABLE_TE_HOME="/tmp/selinux"
 TARGETED_PKG_DIR="/usr/share/selinux/packages/targeted"
-mkdir -p "$TARGETED_PKG_DIR"
 
-# Create a writable temp directory and copy files
+# Create directories and copy files
 mkdir -p "$WRITABLE_TE_HOME"
+mkdir -p "$TARGETED_PKG_DIR"
 cp /ctx/selinux/*.te "$WRITABLE_TE_HOME/"
 
-# Install policy modules
-for te_file in /tmp/selinux/*.te; do
+# Compile policy modules
+for te_file in "$WRITABLE_TE_HOME"/*.te; do
     module_name=$(basename "$te_file" .te)
-    # Make the policy files
-    make -C $WRITABLE_TE_HOME -f /usr/share/selinux/devel/Makefile "${module_name}.pp"
-    # Copy policy files to their home
-    cp "$WRITABLE_TE_HOME/${module_name}.pp" "$TARGETED_PKG_DIR"
-    # Install the policy modules
-    semodule -n -X 300 -i "$TARGETED_PKG_DIR/${module_name}.pp"
+    make -C "$WRITABLE_TE_HOME" -f /usr/share/selinux/devel/Makefile "${module_name}.pp"
 done
+
+# Copy all compiled policy files to their destination
+cp "$WRITABLE_TE_HOME"/*.pp "$TARGETED_PKG_DIR/"
+
+# Create an array of the final .pp paths
+SEMODULE_ARGS=()
+for pp_file in "$TARGETED_PKG_DIR"/*.pp; do
+    SEMODULE_ARGS+=("-i" "$pp_file")
+done
+
+# Load the policy modules
+semodule -n -X 300 "${SEMODULE_ARGS[@]}"
 
 # Cleanup temp directory
 rm -rf "$WRITABLE_TE_HOME"
