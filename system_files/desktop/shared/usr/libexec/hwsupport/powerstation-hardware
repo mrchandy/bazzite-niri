@@ -17,6 +17,11 @@ if [[ "$PRODUCT_NAME" == *AOKZOE* ]]; then
 	exit 0
 fi
 
+# Mysten / SuiPlay (Ayaneo 2S rebadge)
+if [[ "$sys_vendor_lc" == *"mysten"* ]] || [[ "$PRODUCT_NAME" == "SuiPlay0X1" ]]; then
+    exit 0
+fi
+
 # AYANEO
 if [[ "$board_vendor_lc" == *ayaneo* ]]; then
 	exit 0

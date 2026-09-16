@@ -59,14 +59,18 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:terra-gamescope} |
 | **Gamescope Session** | {pkgrel:gamescope-session} |
+| **MangoHUD** | {pkgrel:terra-mangohud} |
 | **InputPlumber** | {pkgrel:inputplumber} |
 | **OpenGamepadUI** | {pkgrel:opengamepadui} |
 | **PowerStation** | {pkgrel:powerstation} |
 | **SteamOS-Manager** | {pkgrel:steamos-manager-powerstation} |
+| **UMU Launcher** | {pkgrel:umu-launcher} |
 | **Bazaar** | {pkgrel:bazaar} |
 | **Niri** | {pkgrel:niri} |
 | **DMS** | {pkgrel:dms} |
 | **Quickshell** | {pkgrel:quickshell-git} |
+| **Distrobox** | {pkgrel:distrobox} |
+| **Waydroid** | {pkgrel:waydroid} |
 
 {changes}
 
