@@ -40,7 +40,7 @@ ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
 FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-nvidia
-FROM ghcr.io/ublue-os/brew:latest@sha256:60ada2d65891d8797beef49d8b43f2108519cbbaf04c9c7363e1a008677fcd35 AS brew
+FROM ghcr.io/ublue-os/brew:latest@sha256:e9a72571b7644b6277f0638b6a3c5e497e265e1098ab91224567acbdeb8b74ea AS brew
 
 FROM scratch AS ctx
 COPY build_files /
@@ -152,16 +152,16 @@ RUN --mount=type=cache,dst=/var/cache \
         pipewire-config-raop \
         mesa-va-drivers && \
     declare -A toswap=( \
-        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite"]="wireplumber" \
         ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez bluez-cups bluez-libs bluez-obexd xorg-x11-server-Xwayland" \
         ["terra-mesa"]="mesa-filesystem" \
     ) && \
+    dnf5 -y swap --allowerasing \
+        --repo terra-extras \
+            wireplumber terra-wireplumber && \
     for repo in "${!toswap[@]}"; do \
         for package in ${toswap[$repo]}; do dnf5 -y swap --from-repo=$repo $package $package; done; \
     done && unset -v toswap repo package && \
     dnf5 versionlock add \
-        wireplumber \
-        wireplumber-libs \
         bluez \
         bluez-cups \
         bluez-libs \
@@ -424,8 +424,6 @@ RUN --mount=type=cache,dst=/var/cache \
             gnome-shell-extension-launch-new-instance \
             gnome-shell-extension-places-menu \
             gnome-shell-extension-window-list && \
-        /ctx/ghcurl "https://raw.githubusercontent.com/jlu5/icoextract/079db7ec82c2f15718f42dfb2340ae26a95e690e/exe-thumbnailer.thumbnailer" -Lo /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
-        setfattr -n user.component -v "exe-thumbnailer" /usr/share/thumbnailers/exe-thumbnailer.thumbnailer && \
         /ctx/build-gnome-extensions && \
         systemctl enable dconf-update.service \
     ; fi && \
@@ -674,7 +672,11 @@ RUN --mount=type=cache,dst=/var/cache \
     ; fi && \
     chmod +x /usr/share/gamescope-session-plus/gamescope-session-plus && \
     sed -i 's/- xbox-elite/- deck/g' /usr/share/inputplumber/devices/50-steam_deck.yaml && \
-    sed -i 's/LOG_LEVEL=info/LOG_LEVEL=debug/g' /usr/lib/systemd/system/inputplumber.service && \
+    sed -i \
+        -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE="/usr/share/gamescope-session-plus/bootstrap_steam.tar.gz"|' \
+        -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_DIR=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_DIR="${HOME}/.local/share"|' \
+        -e 's|export CLIENTCMD="steam -gamepadui -steamos3 -steampal -steamdeck"|export CLIENTCMD="steam -gamepadui -steamos3 -steampal -steamdeck -testoobeupdater"|' \
+        /usr/share/gamescope-session-plus/sessions.d/steam && \
     sed -i 's|^CLIENTCMD="opengamepadui --overlay-mode|/usr/libexec/hwsupport/non-valve-handheld-hardware \&\& CLIENTCMD="opengamepadui --accessibility disabled --overlay-mode --steam-input --steamos-manager --skip-update-pack|' /usr/share/gamescope-session-plus/sessions.d/ogui-steam && \
     git clone https://gitlab.com/evlaV/jupiter-dock-updater-bin.git \
         --depth 1 \
