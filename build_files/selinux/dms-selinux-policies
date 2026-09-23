@@ -7,7 +7,7 @@ dnf -y install selinux-policy-devel
 
 # Set variables
 WRITABLE_TE_HOME="/tmp/selinux"
-TARGETED_PKG_DIR="/usr/share/selinux/packages/targeted"
+TARGETED_PKG_DIR="/usr/share/selinux/packages/dms"
 
 # Create directories and copy files
 mkdir -p "$WRITABLE_TE_HOME"
