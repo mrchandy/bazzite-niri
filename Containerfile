@@ -40,7 +40,7 @@ ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
 FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-nvidia
-FROM ghcr.io/ublue-os/brew:latest@sha256:e9a72571b7644b6277f0638b6a3c5e497e265e1098ab91224567acbdeb8b74ea AS brew
+FROM ghcr.io/ublue-os/brew:latest@sha256:bc6f5a9fc4f28cded2fe567b31f74825c1f4481d5e43c537c3fcc0d3df6d22ab AS brew
 
 FROM scratch AS ctx
 COPY build_files /
@@ -240,7 +240,6 @@ RUN --mount=type=cache,dst=/var/cache \
         usbip \
         compsize \
         ryzenadj \
-        ddcutil \
         input-remapper \
         libinput-utils \
         i2c-tools \
@@ -307,6 +306,9 @@ RUN --mount=type=cache,dst=/var/cache \
             switcheroo-control cardwire && \
     dnf5 -y install --enable-repo=terra \
         cardwire-gui && \
+    dnf5 -y swap --allowerasing \
+        --repo terra-extras \
+            ddcutil terra-ddcutil && \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
     systemctl mask systemd-remount-fs.service && \
@@ -456,7 +458,6 @@ RUN --mount=type=cache,dst=/var/cache \
     cp --no-dereference --preserve=links /usr/lib64/libdrm.so.2 /usr/lib64/libdrm.so && \
     sed -i 's@/usr/bin/steam@/usr/bin/bazzite-steam@g' /usr/share/applications/steam.desktop && \
     sed -i 's@Exec=steam steam://open/bigpicture@Exec=/usr/bin/bazzite-steam-bpm@g' /usr/share/applications/steam.desktop && \
-    sed -i 's|^Exec=lutris %U$|Exec=env PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python lutris %U|' /usr/share/applications/net.lutris.Lutris.desktop && \
     mkdir -p /etc/skel/.config/autostart/ && \
     cp "/usr/share/applications/steam.desktop" "/etc/skel/.config/autostart/steam.desktop" && \
     sed -i 's@/usr/bin/bazzite-steam %U@/usr/bin/bazzite-steam -silent %U@g' /etc/skel/.config/autostart/steam.desktop && \
