@@ -113,7 +113,7 @@ jobs:
         include:
           - fedora_version: 44
             kernel_flavor: ogc
-            kernel_version: 7.2.4-ogc3.1.fc44
+            kernel_version: 7.2.7-ogc1.1.fc44
             base_image_flavor: main
             arch: x86_64
           # - image: bazzite-nvidia
@@ -586,7 +586,7 @@ jobs:
 
       - name: Install ORAS
         if: github.event_name != 'pull_request'
-        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
+        uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4 # v2.0.2
 
       - name: Login to GitHub Container Registry with ORAS
         if: github.event_name != 'pull_request'

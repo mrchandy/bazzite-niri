@@ -280,6 +280,7 @@ RUN --mount=type=cache,dst=/var/cache \
         glow \
         gum \
         vim \
+        msedit \
         cockpit-networkmanager \
         cockpit-podman \
         cockpit-selinux \
@@ -309,6 +310,9 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y swap --allowerasing \
         --repo terra-extras \
             ddcutil terra-ddcutil && \
+    dnf5 -y swap --allowerasing \
+        --repo terra-extras \
+            libddcutil terra-libddcutil && \
     ln -s /dev/null /etc/NetworkManager/dispatcher.d/04-iscsi && \
     systemctl mask iscsi && \
     systemctl mask systemd-remount-fs.service && \
@@ -464,6 +468,7 @@ RUN --mount=type=cache,dst=/var/cache \
     desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/nvtop.desktop && \
     desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/btop.desktop && \
     desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/yad-icon-browser.desktop && \
+    desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/com.microsoft.edit.desktop && \
     sed -i 's/#UserspaceHID.*/UserspaceHID=true/' /etc/bluetooth/input.conf && \
     sed -i "s|grub_probe\} --target=device /\`|grub_probe} --target=device /sysroot\`|g" /usr/bin/grub2-mkconfig && \
     rm -f /usr/lib/systemd/system/service.d/50-keep-warm.conf && \
@@ -666,17 +671,16 @@ RUN --mount=type=cache,dst=/var/cache \
         qt6-qtvirtualkeyboard \
         xorg-x11-server-Xvfb \
         python-vdf \
-        python-crcmod && \
+        python-crcmod \
+        acpid && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
         dnf5 -y install --enable-repo=terra \
             plasma-applet-tdp-control \
     ; fi && \
     chmod +x /usr/share/gamescope-session-plus/gamescope-session-plus && \
-    sed -i 's/- xbox-elite/- deck/g' /usr/share/inputplumber/devices/50-steam_deck.yaml && \
     sed -i \
         -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE="/usr/share/gamescope-session-plus/bootstrap_steam.tar.gz"|' \
         -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_DIR=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_DIR="${HOME}/.local/share"|' \
-        -e 's|export CLIENTCMD="steam -gamepadui -steamos3 -steampal -steamdeck"|export CLIENTCMD="steam -gamepadui -steamos3 -steampal -steamdeck -testoobeupdater"|' \
         /usr/share/gamescope-session-plus/sessions.d/steam && \
     sed -i 's|^CLIENTCMD="opengamepadui --overlay-mode|/usr/libexec/hwsupport/non-valve-handheld-hardware \&\& CLIENTCMD="opengamepadui --accessibility disabled --overlay-mode --steam-input --steamos-manager --skip-update-pack|' /usr/share/gamescope-session-plus/sessions.d/ogui-steam && \
     git clone https://gitlab.com/evlaV/jupiter-dock-updater-bin.git \
@@ -776,6 +780,8 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl disable vpower.service && \
     systemctl disable jupiter-biosupdate.service && \
     systemctl disable jupiter-controller-update.service && \
+    systemctl disable acpid.service && \
+    find /etc/acpi/events -mindepth 1 -delete && \
     dnf5 config-manager setopt skip_if_unavailable=1 && \
     /ctx/image-info && \
     /ctx/build-initramfs && \
@@ -841,6 +847,9 @@ RUN --mount=type=cache,dst=/var/cache \
     ln -s libnvidia-ml.so.1 /usr/lib64/libnvidia-ml.so && \
     dnf5 config-manager setopt "terra-mesa".enabled=0 && \
     dnf5 -y copr disable ublue-os/staging && \
+    dnf5 -y swap \
+        --repo terra-extras \
+            waydroid waydroid-nvidia && \
     /ctx/cleanup
 
 # Cleanup & Finalize

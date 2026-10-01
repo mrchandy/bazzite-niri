@@ -6,7 +6,7 @@ IMAGE_BRANCH=$(jq -r '."image-branch"' < $IMAGE_INFO)
 FEDORA_VERSION=$(jq -r '."fedora-version"' < $IMAGE_INFO)
 
 # SCRIPT VERSION
-HWS_VER=78
+HWS_VER=79
 HWS_VER_FILE="/etc/bazzite/hws_version"
 HWS_VER_RAN=$(cat $HWS_VER_FILE)
 
@@ -147,8 +147,8 @@ if [[ $IMAGE_NAME =~ "deck" ]]; then
       echo "PowerStation HTPC detected, unmasking powerstation and masking inputplumber".
       systemctl unmask powerstation.service
       systemctl enable --now powerstation.service
-      systemctl stop inputplumber.service
-      systemctl mask inputplumber.service
+      systemctl unmask inputplumber.service
+      systemctl enable --now inputplumber.service
       systemctl disable --now jupiter-fan-control.service
       systemctl disable --now vpower.service
       systemctl disable --now jupiter-biosupdate.service
@@ -160,8 +160,8 @@ if [[ $IMAGE_NAME =~ "deck" ]]; then
     echo "Non-handheld hardware detected, unmasking PPD and masking powerstation".
     systemctl unmask tuned.service
     systemctl unmask tuned-ppd.service
-    systemctl stop inputplumber.service
-    systemctl mask inputplumber.service
+    systemctl unmask inputplumber.service
+    systemctl enable --now inputplumber.service
     systemctl stop powerstation.service
     systemctl mask powerstation.service
     systemctl mask pulse8-cec-inputattach@.service
@@ -248,6 +248,17 @@ fi
 if [[ -f "/var/lib/waydroid/lxc/waydroid/config" ]]; then
   echo "Removing unneeded apparmor entry from Waydroid LXC"
   sed -i '/lxc\.apparmor\.profile\s*=\s*unconfined/d' "/var/lib/waydroid/lxc/waydroid/config"
+fi
+
+# HIBERNATION
+if /usr/libexec/hwsupport/needs-hibernation; then
+  if [[ ! -f /etc/bazzite/hibernation_enabled ]]; then
+    echo "Hardware requiring hibernation detected, enabling hibernation"
+    /usr/libexec/bazzite-enable-hibernation || exit 1
+    SHOULD_REBOOT=true
+  fi
+
+  systemctl enable --now acpid.service
 fi
 
 # HOSTNAME FIX
