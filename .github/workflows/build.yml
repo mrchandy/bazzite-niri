@@ -113,7 +113,7 @@ jobs:
         include:
           - fedora_version: 44
             kernel_flavor: ogc
-            kernel_version: 7.2.7-ogc1.1.fc44
+            kernel_version: 7.2.8-ogc4.1.fc44
             base_image_flavor: main
             arch: x86_64
           # - image: bazzite-nvidia
@@ -447,7 +447,7 @@ jobs:
       - name: Setup Syft
         id: setup-syft
         if: github.event_name != 'pull_request'
-        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           # FIXME: a renovate rule for this would be nice
           syft-version: v1.44.0

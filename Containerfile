@@ -40,7 +40,7 @@ ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
 FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-nvidia
-FROM ghcr.io/ublue-os/brew:latest@sha256:bc6f5a9fc4f28cded2fe567b31f74825c1f4481d5e43c537c3fcc0d3df6d22ab AS brew
+FROM ghcr.io/ublue-os/brew:latest@sha256:2aaf87e3757466bc28d056505a651c7ca5c56fd28f6ff709b34f3f5dbc860e89 AS brew
 
 FROM scratch AS ctx
 COPY build_files /
@@ -63,17 +63,6 @@ ARG VERSION_PRETTY="${VERSION_PRETTY}"
 
 COPY system_files/desktop/shared/ system_files/desktop/${BASE_IMAGE_NAME}/ /
 RUN find /usr/share/ublue-os/docs -type f -exec setfattr -n user.component -v "ublue-docs" {} +
-
-# Pin linux-firmware to a known-good version
-RUN --mount=type=cache,dst=/var/cache \
-    --mount=type=cache,dst=/var/cache/libdnf5 \
-    --mount=type=cache,dst=/var/log \
-    --mount=type=bind,from=ctx,source=/,target=/ctx \
-    --mount=type=tmpfs,dst=/tmp \
-    dnf5 -y install --best --allowerasing \
-        "linux-firmware-${LINUX_FIRMWARE_VERSION}*" \
-        "linux-firmware-whence-${LINUX_FIRMWARE_VERSION}*" && \
-    /ctx/cleanup
 
 # Install needed firmware blobs
 RUN --mount=type=bind,src=firmware,dst=/ctx/firmware \
@@ -142,7 +131,7 @@ RUN --mount=type=cache,dst=/var/cache \
     ; fi && \
     /ctx/cleanup
 
-# Install Valve's patched Mesa, Bluez, and Xwayland
+# Install Valve's patched Mesa, and Xwayland
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/cache/libdnf5 \
     --mount=type=cache,dst=/var/log \
@@ -152,7 +141,7 @@ RUN --mount=type=cache,dst=/var/cache \
         pipewire-config-raop \
         mesa-va-drivers && \
     declare -A toswap=( \
-        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="bluez bluez-cups bluez-libs bluez-obexd xorg-x11-server-Xwayland" \
+        ["copr:copr.fedorainfracloud.org:ublue-os:bazzite-multilib"]="xorg-x11-server-Xwayland" \
         ["terra-mesa"]="mesa-filesystem" \
     ) && \
     dnf5 -y swap --allowerasing \
@@ -162,10 +151,6 @@ RUN --mount=type=cache,dst=/var/cache \
         for package in ${toswap[$repo]}; do dnf5 -y swap --from-repo=$repo $package $package; done; \
     done && unset -v toswap repo package && \
     dnf5 versionlock add \
-        bluez \
-        bluez-cups \
-        bluez-libs \
-        bluez-obexd \
         xorg-x11-server-Xwayland \
         mesa-dri-drivers \
         mesa-filesystem \
@@ -301,7 +286,8 @@ RUN --mount=type=cache,dst=/var/cache \
         gmodpatchtool \
         bazzite-portal \
         kernel-tools \
-        ls-iommu && \
+        ls-iommu \
+        xdg-native-messaging-proxy && \
     dnf5 -y swap \
         --repo terra \
             switcheroo-control cardwire && \
@@ -468,7 +454,7 @@ RUN --mount=type=cache,dst=/var/cache \
     desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/nvtop.desktop && \
     desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/btop.desktop && \
     desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/yad-icon-browser.desktop && \
-    desktop-file-edit --set-key=Hidden --set-value=true /usr/share/applications/com.microsoft.edit.desktop && \
+    rm /usr/share/applications/com.microsoft.edit.desktop && \
     sed -i 's/#UserspaceHID.*/UserspaceHID=true/' /etc/bluetooth/input.conf && \
     sed -i "s|grub_probe\} --target=device /\`|grub_probe} --target=device /sysroot\`|g" /usr/bin/grub2-mkconfig && \
     rm -f /usr/lib/systemd/system/service.d/50-keep-warm.conf && \
@@ -675,7 +661,9 @@ RUN --mount=type=cache,dst=/var/cache \
         acpid && \
     if grep -q "kinoite" <<< "${BASE_IMAGE_NAME}"; then \
         dnf5 -y install --enable-repo=terra \
-            plasma-applet-tdp-control \
+            plasma-applet-tdp-control && \
+        dnf5 -y remove \
+            plasma-setup \
     ; fi && \
     chmod +x /usr/share/gamescope-session-plus/gamescope-session-plus && \
     sed -i \
@@ -759,7 +747,7 @@ RUN --mount=type=cache,dst=/var/cache \
     mkdir -p /usr/lib/systemd/user/gamescope-session-plus@ogui-steam.service.wants && \
     ln -s /usr/lib/systemd/user/steamos-powerbuttond.service /usr/lib/systemd/user/gamescope-session-plus@ogui-steam.service.wants/ && \
     sed -i 's/@steam/@ogui-steam/g' /usr/lib/systemd/user/gamemode-news-hook.service && \
-    sed -i '/^\[Service\]$/a KillSignal=SIGKILL\nTimeoutStopSec=2s\nTimeoutStopFailureMode=kill' /usr/lib/systemd/user/gamemode-news-hook.service && \
+    sed -i '/^\[Service\]$/a KillSignal=SIGKILL\nSuccessExitStatus=SIGKILL\nTimeoutStopSec=2s\nTimeoutStopFailureMode=kill' /usr/lib/systemd/user/gamemode-news-hook.service && \
     systemctl enable --global steamos-manager.service && \
     systemctl enable --global steamos-manager-session-cleanup.service && \
     systemctl enable --global steamos-manager-configure-cecd.service && \
