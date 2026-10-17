@@ -29,6 +29,9 @@ declare -a REMOVE_GNOME=(
              # https://invent.kde.org/utilities/konsole/-/merge_requests/1207
 )
 
+# Packages to remove on Niri (Base).
+declare -a REMOVE_NIRI=()
+
 # -- Build the removal list based on the base image --
 echo "==> Building removal list for '${BASE_IMAGE_NAME}'..."
 
@@ -36,6 +39,8 @@ if [[ "${BASE_IMAGE_NAME}" == "kinoite" ]]; then
     REMOVE_ALL=( "${REMOVE_KDE[@]}" "${REMOVE_GLOBAL[@]}" )
 elif [[ "${BASE_IMAGE_NAME}" == "silverblue" ]]; then
     REMOVE_ALL=( "${REMOVE_GNOME[@]}" "${REMOVE_GLOBAL[@]}" )
+elif [[ "${BASE_IMAGE_NAME}" == "base" ]]; then
+    REMOVE_ALL=( "${REMOVE_NIRI[@]}" "${REMOVE_GLOBAL[@]}" )
 fi
 
 # -- Remove the packages --

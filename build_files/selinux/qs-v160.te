@@ -1,0 +1,25 @@
+
+module qs-v160 1.0;
+
+require {
+	type xdm_t;
+	type tetex_data_t;
+	type root_t;
+	type var_t;
+	class dir { create watch };
+	class file { map watch write };
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t root_t:dir watch;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t tetex_data_t:file map;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:dir { create watch };
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:file { watch write };

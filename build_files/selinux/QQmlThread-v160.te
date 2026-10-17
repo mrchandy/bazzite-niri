@@ -1,0 +1,17 @@
+
+module QQmlThread-v160 1.0;
+
+require {
+	type xdm_t;
+	type var_t;
+	class dir create;
+	class file { link map rename write };
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:dir create;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:file { link map rename write };

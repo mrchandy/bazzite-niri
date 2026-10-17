@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -ouex pipefail
+
+# Install the selinux-policy-devel package to make the policies
+dnf -y install selinux-policy-devel
+
+# Set variables
+WRITABLE_TE_HOME="/tmp/selinux"
+TARGETED_PKG_DIR="/usr/share/selinux/packages/dms"
+
+# Create directories and copy files
+mkdir -p "$WRITABLE_TE_HOME"
+mkdir -p "$TARGETED_PKG_DIR"
+cp /ctx/selinux/*.te "$WRITABLE_TE_HOME/"
+
+# Compile policy modules
+for te_file in "$WRITABLE_TE_HOME"/*.te; do
+    module_name=$(basename "$te_file" .te)
+    make -C "$WRITABLE_TE_HOME" -f /usr/share/selinux/devel/Makefile "${module_name}.pp"
+done
+
+# Copy all compiled policy files to their destination
+cp "$WRITABLE_TE_HOME"/*.pp "$TARGETED_PKG_DIR/"
+
+# Create an array of the final .pp paths
+SEMODULE_ARGS=()
+for pp_file in "$TARGETED_PKG_DIR"/*.pp; do
+    SEMODULE_ARGS+=("-i" "$pp_file")
+done
+
+# Load the policy modules
+semodule -n -X 300 "${SEMODULE_ARGS[@]}"
+
+# Cleanup temp directory
+rm -rf "$WRITABLE_TE_HOME"
+
+# Remove the se-linux-policy-devel package when we are done
+dnf -y remove selinux-policy-devel

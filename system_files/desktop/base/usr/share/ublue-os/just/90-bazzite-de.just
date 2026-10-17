@@ -92,8 +92,7 @@ enable-dsearch ACTION="":
     case "$OPTION" in
       "Enable dsearch"|enable)
         echo "Enabling dsearch..."
-        systemctl --user enable dsearch
-        systemctl --user start dsearch
+        systemctl --user enable --now dsearch
         echo -e "\n${bold}dsearch is now ${green}Enabled${normal}."
         echo -e "\n${bold}dsearch${normal} config is generated at ~/.config/danksearch/config.toml"
         echo -e "See https://danklinux.com/docs/danksearch/configuration for configuration documentation."
@@ -103,8 +102,7 @@ enable-dsearch ACTION="":
         ;;
       "Disable dsearch"|disable)
         echo -e "\nDisabling dsearch..."
-        systemctl --user disable dsearch
-        systemctl --user stop dsearch
+        systemctl --user disable --now dsearch
         echo -e "\n${bold}dsearch${normal} is now ${yellow}Disabled${normal}."
         echo " "
         ;;

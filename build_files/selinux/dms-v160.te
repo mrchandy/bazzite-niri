@@ -1,0 +1,31 @@
+
+module dms-v160 1.0;
+
+require {
+	type xdm_t;
+	type var_t;
+	type tetex_data_t;
+	class dir { add_name create getattr open read remove_name rename rmdir search write };
+	class file { create open setattr unlink write };
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t self:dir { add_name write };
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t tetex_data_t:dir { add_name create getattr read remove_name rmdir search };
+
+#!!!! This avc can be allowed using the boolean 'polyinstantiation_enabled'
+allow xdm_t tetex_data_t:dir { getattr search open };
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t tetex_data_t:file { create open setattr unlink };
+allow xdm_t tetex_data_t:file write;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:dir { create rename rmdir };
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t var_t:file { create setattr unlink write };

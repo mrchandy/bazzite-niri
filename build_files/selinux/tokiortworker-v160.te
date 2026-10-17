@@ -1,0 +1,17 @@
+
+module tokiortworker-v160 1.0;
+
+require {
+	type xdm_t;
+	type root_t;
+	type install_var_run_t;
+	class file { getattr open read };
+}
+
+#============= xdm_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t install_var_run_t:file getattr;
+
+#!!!! This avc is allowed in the current policy
+allow xdm_t root_t:file { getattr open read };

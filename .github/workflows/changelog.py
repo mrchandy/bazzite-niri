@@ -76,12 +76,7 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **DMS** | {pkgrel:dms} |
 | **Quickshell** | {pkgrel:quickshell-git} |
 | **Distrobox** | {pkgrel:distrobox} |
-| **Gnome** | {pkgrel:gnome-control-center-filesystem} |
-| **KDE** | {pkgrel:plasma-desktop} |
 | **Waydroid** | {pkgrel:waydroid} |
-| **Waydroid (Nvidia)** | {pkgrel:waydroid-nvidia} |
-| **Nvidia Open** | {pkgrel:nvidia-kmod-common} |
-| **Nvidia LTS** | {pkgrel:nvidia-kmod-common-lts} |
 
 {changes}
 
