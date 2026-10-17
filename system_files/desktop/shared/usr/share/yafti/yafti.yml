@@ -41,7 +41,7 @@ screens:
         title: "Antigravity"
         description: "AI-powered IDE from Google — installed using Brew."
         default: false
-        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew tap ublue-os/tap && brew install --cask antigravity-linux'
+        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew trust ublue-os/tap && brew tap ublue-os/tap && brew install --cask antigravity-linux'
       - id: "asus"
         title: "asusctl & ROG Control Center"
         description: "Utilities for management of ASUS hardware."
@@ -49,7 +49,7 @@ screens:
         status_script: "ujust asus status"
         options:
           - id: "install"
-            label: "Install asusctl & ROG Control Center"
+            label: "Install asusctl & ROG Control Center - Intended for ASUS Laptops"
             script: 'ujust asus install; status=$?; echo; echo "Press Enter to close..."; read -r _; exit $status'
           - id: "uninstall"
             label: "Uninstall asusctl & ROG Control Center"
@@ -168,23 +168,23 @@ screens:
         title: "JetBrains Toolbox"
         description: "Utility for managing IDE installs from JetBrains — installed using Brew."
         default: false
-        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew tap ublue-os/tap && brew install --cask jetbrains-toolbox-linux'
+        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew trust ublue-os/tap && brew tap ublue-os/tap && brew install --cask jetbrains-toolbox-linux'
       - id: "lm-studio-linux"
         title: "LM Studio"
         description: "Suite for locally utilizing large language models (LLMs) — installed using Brew."
         default: false
-        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew tap ublue-os/tap && brew install --cask lm-studio-linux'
-      - id: "lsfg-vk"
-        title: "Lossless Scaling — Vulkan Layer"
-        description: "Install «lsfg-vk», the adapter for Lossless Scaling frame generation on Linux."
+        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew trust ublue-os/tap && brew tap ublue-os/tap && brew install --cask lm-studio-linux'
+      - id: "lsfg-vk v2"
+        title: "Lossless Scaling — Vulkan Layer v2"
+        description: "Install «lsfg-vk v2», the adapter for Lossless Scaling frame generation on Linux."
         default: false
         status_script: "ujust get-lsfg status"
         options:
           - id: "install"
-            label: "Install «lsfg-vk»"
+            label: "Install «lsfg-vk v2»"
             script: 'ujust get-lsfg install; status=$?; echo; echo "Press Enter to close..."; read -r _; exit $status'
           - id: "uninstall"
-            label: "Uninstall «lsfg-vk»"
+            label: "Uninstall «lsfg-vk v2»"
             script: 'ujust get-lsfg uninstall; status=$?; echo; echo "Press Enter to close..."; read -r _; exit $status'
       - id: "openrazer"
         title: "OpenRazer"
@@ -228,6 +228,23 @@ screens:
           - id: "uninstall"
             label: "Uninstall OpenTabletDriver"
             script: "ujust opentabletdriver uninstall"
+      - id: "proton-plus"
+        title: "Proton Plus"
+        description: "ProtonPlus helps you install, update, remove, and organize compatibility tools used by Steam and other Linux game launchers."
+        default: false
+        status_script: |
+          if flatpak info com.vysp3r.ProtonPlus >/dev/null 2>&1; then
+            echo install
+          else
+            echo uninstall
+          fi
+        options:
+          - id: "install"
+            label: "Install Proton Plus"
+            script: "yad --info --title=\"Tip\" --image=dialog-information --text \"Proton Plus will be installed from Flathub.\" --button=\"Got it\"!gtk-ok! && ujust get-protonplus >&/dev/null"
+          - id: "add-to-steam"
+            label: "Add Proton Plus to Steam Big Picture"
+            script: "yad --info --title=\"Tip\" --image=dialog-information --text \"Proton Plus will be added to Steam as a Non-Steam application, and supports controller naviagtion\" --button=\"Nice!\"!gtk-ok! && ujust add-protonplus-to-steam >&/dev/null"
       - id: "resilio-sync"
         title: "Resilio Sync"
         description: "File synchronization utility powered by BitTorrent."
@@ -254,16 +271,16 @@ screens:
             script: "ujust get-steamcmd uninstall"
       - id: "sunshine"
         title: "Sunshine"
-        description: "Self-hosted video game streaming host for Moonlight."
+        description: "Self-hosted video game streaming host for Moonlight. Desktop users are encouraged to use the Flatpak version, while Deck users may wish to choose Sunshine - Brew to enable streaming from game mode."
         default: false
         status_script: "ujust setup-sunshine status"
         options:
           - id: "enable"
-            label: "Enable Sunshine"
+            label: "Enable Sunshine (Flatpak)"
             script: "ujust setup-sunshine enable"
           - id: "enable-brew"
-            label: "Enable Sunshine Beta (installed using Brew)"
-            script: "ujust setup-sunshine enable-beta"
+            label: "Enable Sunshine - Brew (for deck users)"
+            script: "ujust setup-sunshine enable-brew"
           - id: "update"
             label: "Update Sunshine"
             script: "ujust setup-sunshine update"
@@ -278,20 +295,20 @@ screens:
             script: "ujust setup-sunshine portal"
           - id: "vmon"
             label: "Setup Virtual Monitor"
-            script: "ujust setup-sunshine virtual-monitor"
+            script: "yad --info --title=\"Info\" --image=dialog-information --text \"Virtual monitors are only supported in KDE's KWin compositor! After applying the Error 503 Fix please reboot your system.\" --button=\"Ok\"!gtk-ok! && ujust setup-sunshine virtual-monitor"
       - id: "visual-studio-code-linux"
         title: "Visual Studio Code"
         description: "Open source code editor and debugger from Microsoft — installed using Brew."
         default: false
-        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew tap ublue-os/tap && brew install --cask visual-studio-code-linux'
+        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew trust ublue-os/tap && brew tap ublue-os/tap && brew install --cask visual-studio-code-linux'
       - id: "vscodium-linux"
         title: "VSCodium"
         description: "Strictly open source community edition of Visual Studio Code — installed using Brew."
         default: false
-        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew tap ublue-os/tap && brew install --cask vscodium-linux'
+        script: 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew trust ublue-os/tap && brew tap ublue-os/tap && brew install --cask vscodium-linux'
       - id: "waydroid"
         title: "Waydroid"
-        description: "Android system in a container, for app compatibility on Linux. Incompatible with NVIDIA drivers."
+        description: "Android system in a container, for app compatibility on Linux."
         default: false
         options:
           - id: "init"
@@ -421,11 +438,16 @@ screens:
     description: "System management and configuration"
     actions:
       - id: "update-bazzite"
-        hidden: true
+        default: false
         title: "Update your system"
         description: "Update Bazzite, Flatpak apps, and more."
-        default: false
-        script: "ujust update"
+        options:
+          - id: "Launch Bazzite Updater"
+            label: "Update Now"
+            script: "yad --info --title=\"Tip\" --image=dialog-information --text \"You can launch Bazzite Updater anytime from your pinned apps or the app menu.\" --button=\"Got it\"!gtk-ok! && nohup setsid bazzite-updater >&/dev/null"
+          - id: "Game Mode Shortcut"
+            label: "Add Bazzite Updater to Steam Big Picture"
+            script: "yad --info --title=\"Info\" --image=dialog-information --text \"This will add Bazzite Updater as a Non-Steam App, allowing updates with your controller from Big Picture Mode.\" --button=\"Nice\"!gtk-ok! && ujust add-updater-to-steam >&/dev/null"
       - id: "rebase-bazzite-stable"
         title: "Move to the stable update track"
         description: "Rebase your system to the «stable» Bazzite image tag."
@@ -446,12 +468,6 @@ screens:
         description: "Remove the next image deployment, halting all updates or layering changes pending reboot."
         default: false
         script: 'rpm-ostree cleanup -p; status=$?; echo; echo "Press Enter to close..."; read -r _; exit $status'
-      - id: "update-nvidia-runtime"
-        title: "Update Nvidia Flatpak Runtime"
-        description: "Synchronizes Nvidia Flatpak Runtimes with system version. This is usually done automatically by the systemd service."
-        default: false
-        status_script: "ujust update-nvidia-runtime status"
-        script: "ujust update-nvidia-runtime upgrade"
       - id: "verify-image"
         title: "Move to a ‘verified’ image"
         description: "Detect if you are on an ‘unverified’ image of Bazzite and then, if applicable, move you to a signed one."
@@ -510,7 +526,7 @@ screens:
             script: "ujust cockpit disable"
       - id: "ssh-service"
         title: "Enable SSH remote access"
-        description: "Toggle the secure shell (SSH) service for advanced remote management."
+        description: "Enable SSH remote access on every boot, disable it, or just start it until restart."
         default: false
         status_script: "ujust ssh status"
         options:
@@ -520,6 +536,9 @@ screens:
           - id: "disable"
             label: "Disable SSH Access"
             script: "ujust ssh disable"
+          - id: "start"
+            label: "Start until restart"
+            script: "ujust ssh start"
       - id: "hide-grub"
         title: "Manage GRUB menu visibility"
         description: "Configure if the GRUB menu should appear during the system boot sequence."
@@ -585,6 +604,30 @@ screens:
         description: "Add a shortcut in Steam for automated booting into Windows — could be handy in setups with a dual-boot."
         default: false
         script: "ujust setup-boot-windows-steam"
+      - id: "default-deck-session"
+        title: "Set Default Deck Login Mode"
+        description: "Change whether your Deck/HTPC logs start in Game Mode or Desktop"
+        status_script: |
+          steamosctl get-default-login-mode
+        options:
+          - id: "set-to-game-mode"
+            label: "Set to Game Mode"
+            script: "ujust set-default-game-mode"
+          - id: "set-default-desktop"
+            label: "Set to Desktop Mode"
+            script: "ujust set-default-desktop"
+      - id: "configure-opengamepadui"
+        title: "Toggle OpenGamepadUI overlay"
+        description: "Enable or disable the OpenGamepadUI overlay in Game Mode."
+        default: false
+        status_script: "ujust configure-opengamepadui status"
+        options:
+          - id: "enable"
+            label: "Enable OpenGamepadUI Overlay"
+            script: "ujust configure-opengamepadui enable"
+          - id: "disable"
+            label: "Disable OpenGamepadUI Overlay"
+            script: "ujust configure-opengamepadui disable"
       - id: "steam-icons"
         title: "Clean Steam desktop icons automatically"
         description: "Enable a login script to remove icons generated by Steam from your desktop — useful when installing games via Game Mode."
@@ -662,6 +705,19 @@ screens:
             script: "ujust global-fsr4 enable"
           - id: "disable"
             label: "Disable Autoupgrading FSR"
+            script: "ujust global-fsr4 disable"
+      - id: "configure-amd-hdmi21"
+        title: "Enable HDMI 2.1 for AMD graphics cards"
+        description: "Set a kernel argument for booting AMD graphics with additional functionality. Currently, this may induce flickering and/or signal instability to some displays."
+        status_script: "ujust configure-amd-hdmi21 status"
+        default: false
+        options:
+          - id: "enable"
+            label: "Enable HDMI 2.1 for AMD Graphics Cards"
+            script: "ujust configure-amd-hdmi21 enable"
+          - id: "disable"
+            label: "Disable HDMI 2.1 for AMD Graphics Cards"
+            script: "ujust configure-amd-hdmi21 disable"
       - id: "password-asterisks"
         title: "Enable visible password asterisks in CLI"
         description: "Toggle showing feedback for characters typed in «sudo» password prompts."
@@ -774,6 +830,12 @@ screens:
         description: "Revert the ‘current deployment’ back to the former one. May be useful if the booted image has an issue."
         default: false
         script: "brh rollback -y && reboot"
+      - id: "update-nvidia-runtime"
+        title: "Update Flatpak libraries for NVIDIA"
+        description: "Manually match the Flatpak runtime with the driver version in your system image. This is usually handled automatically in background updates."
+        default: false
+        status_script: "ujust update-nvidia-runtime status"
+        script: "ujust update-nvidia-runtime upgrade"
       - id: "save-panics"
         title: "Enable saving kernel panics"
         description: "Toggle the «ramoops» panic logger to keep system crash records on reboot."
@@ -791,11 +853,6 @@ screens:
         description: "Send «kill» signal to processes pertaining to Wine/Proton. May be useful if a task seems to be stuck."
         default: false
         script: "ujust fix-proton-hang"
-      - id: "fix-gmod"
-        title: "Patch 64-bit beta version for Garry's Mod"
-        description: "Fix over many issues with the native 64-bit Linux version of Garry's Mod through a third-party patch."
-        default: false
-        script: "ujust fix-gmod"
       - id: "fix-reset-steam"
         title: "Reset Steam installation"
         description: "Remove local Steam files and reacquire them fresh from Valve servers. Will not delete game or save files!"
@@ -820,15 +877,15 @@ screens:
             script: 'ujust toggle-bt-mic disable; status=$?; echo; echo "Press Enter to close..."; read -r _; exit $status'
       - id: "cec-mode"
         title: "Change CEC mode"
-        description: "Toggle the HDMI-CEC back-end path. Routing through the dedicated GPU should be more reliable for home theater PCs, while routing natively could be preferred in handhelds."
+        description: "Change the HDMI-CEC back-end path. Routing through the dedicated GPU should be more reliable for home theater PCs, while routing natively could be preferred in handhelds and is known to cause sleep/wake issues in some HTPC configurations."
         default: false
         status_script: "ujust cec-mode status"
         options:
           - id: "dgpu"
-            label: "Route through dGPU"
+            label: "Route through dGPU (HTPC)"
             script: "ujust cec-mode dgpu"
           - id: "native"
-            label: "Route Natively"
+            label: "Route Natively (Handhelds)"
             script: "ujust cec-mode native"
       - id: "inputplumber"
         title: "Toggle InputPlumber"

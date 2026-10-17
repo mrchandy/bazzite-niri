@@ -1,13 +1,5 @@
 # vim: set ft=make :
 
-alias patch-gmod := fix-gmod
-
-# Patch GMod's 64-bit beta to work properly on Linux (https://github.com/solsticegamestudios/GModPatchTool)
-[group("gaming")]
-fix-gmod:
-    #!/usr/bin/bash
-    /usr/bin/gmodpatchtool
-
 # Kills all processes related to wine and proton. This forces it to restart next time you launch the game (you might still have to press STOP in steam to kill the game binary)
 [group("gaming")]
 fix-proton-hang:
@@ -598,6 +590,7 @@ cec-mode ACTION="":
       sudo -v || exit 1
       echo "Switching HDMI-CEC to dGPU mode..."
       systemctl --user disable --now "${NATIVE_UNITS[@]}" >/dev/null 2>&1 || true
+      systemctl --user mask "${NATIVE_UNITS[@]}" >/dev/null 2>&1 || true
       sudo systemctl stop 'pulse8-cec-inputattach@*.service' 'rainshadow-cec-inputattach@*.service' >/dev/null 2>&1 || true
       sudo systemctl mask "${INPUTATTACH_UNITS[@]}" >/dev/null 2>&1 || true
       remove_cecd_native_config
@@ -632,8 +625,8 @@ cec-mode ACTION="":
       sudo udevadm control --reload-rules >/dev/null 2>&1 || true
       sudo udevadm trigger --subsystem-match=tty --action=add >/dev/null 2>&1 || true
       systemctl --user daemon-reload
-      systemctl --user enable steamos-manager-configure-cecd.service >/dev/null 2>&1 || true
-      systemctl --user enable cecd.service
+      systemctl --user unmask "${NATIVE_UNITS[@]}" >/dev/null 2>&1 || true
+      systemctl --user enable "${NATIVE_UNITS[@]}" >/dev/null 2>&1 || true
       systemctl --user start --no-block cecd.service
       timeout 15 steamosctl set-hdmi-cec-state control-and-wake >/dev/null 2>&1 || true
       echo -e "HDMI-CEC is now using ${green}${bold}Native mode${normal}."
@@ -786,6 +779,139 @@ cec-sleep ACTION="":
         echo -e "CEC on-sleep standby is now ${red}${bold}Disabled${normal}."
         ;;
       "Exit without saving"|*)
+        echo "No changes made."
+        ;;
+    esac
+
+# Manage Intel Ethernet fix (Disables ASPM and sets PCIe policy to Performance). Options: status | enable | disable
+[group("network")]
+manage-intel-ethernet ACTION="":
+    #!/usr/bin/env bash
+    # 1. Capture current state
+    CURRENT_KARGS=$(rpm-ostree kargs)
+    get_status_token() {
+        if echo "$CURRENT_KARGS" | grep -q "pcie_aspm.policy=performance" && echo "$CURRENT_KARGS" | grep -q "pcie_aspm=off"; then
+            echo "enable"
+        else
+            echo "disable"
+        fi
+    }
+    get_current_status() {
+        if [[ "$(get_status_token)" == "enable" ]]; then
+            echo "Disable ASPM & Set Performance Policy"
+        else
+            echo "Defaults"
+        fi
+    }
+    OPTION="{{ ACTION }}"
+    if [ "$OPTION" == "help" ]; then
+        echo "Usage: ujust manage-intel-ethernet <option>"
+        echo "  <option>: Specify the option to skip the interactive prompt"
+        echo "  Use 'enable' to apply the Intel Ethernet stability fix"
+        echo "  Use 'disable' to restore Intel Ethernet defaults"
+        echo "  Use 'status' to print the current fix state"
+        exit 0
+    elif [ "$OPTION" == "status" ]; then
+        get_status_token
+        exit 0
+    fi
+    echo -e "This script manages a stability fix for Intel I225-V and I226-V Ethernet controllers."
+    echo -e "It disables PCIe Active State Power Management (ASPM) and sets the PCIe policy to performance to prevent hardware hangs, failed register reads, and total connection drops."
+    echo -e "\nCurrent setting: $(get_current_status)\n"
+    if [ -z "$OPTION" ]; then
+        OPTION=$(gum choose "Disable ASPM & Performance Policy" "Restore Defaults" "Exit without changes")
+    fi
+
+    case "$OPTION" in
+      "Disable ASPM & Performance Policy"|enable)
+        if ! lspci | grep -Ei "I225|I226|I221|I222" > /dev/null; then
+             gum style --foreground 196 "Error: No compatible Intel NIC detected."
+             exit 0
+        fi
+
+        # 2. Only run rpm-ostree if the fix is actually missing
+        if echo "$CURRENT_KARGS" | grep -q "pcie_aspm.policy=performance" && echo "$CURRENT_KARGS" | grep -q "pcie_aspm=off"; then
+            gum style --foreground 212 "Notice: Fixes are already applied in kargs."
+        else
+            echo "Applying Intel Ethernet stability fixes..."
+            # Added deletion of the old ignored EEE arg and appended the new policy
+            rpm-ostree kargs --delete='igc.EEE=0' --append-if-missing='pcie_aspm=off' --append-if-missing='pcie_aspm.policy=performance' 2>/dev/null || true
+            echo "Done! Please reboot to apply changes."
+        fi
+        ;;
+      "Restore Defaults"|disable)
+        if ! echo "$CURRENT_KARGS" | grep -q "pcie_aspm=off"; then
+            gum style --foreground 117 "Notice: System is already at defaults."
+        else
+            echo "Restoring Intel Ethernet defaults..."
+            rpm-ostree kargs --delete='igc.EEE=0' --delete='pcie_aspm=off' --delete='pcie_aspm.policy=performance' 2>/dev/null || true
+            echo "Defaults restored. Please reboot."
+        fi
+        ;;
+      "Exit without changes"|*)
+        echo "No changes made."
+        ;;
+    esac
+
+# Manage PCIe Power Management fix. Options: status | enable | disable
+[group("hardware")]
+manage-pcie-power ACTION="":
+    #!/usr/bin/env bash
+    CURRENT_KARGS=$(rpm-ostree kargs)
+    get_status_token() {
+        if echo "$CURRENT_KARGS" | grep -q "pcie_port_pm=off"; then
+            echo "enable"
+        else
+            echo "disable"
+        fi
+    }
+    get_current_status() {
+        if [[ "$(get_status_token)" == "enable" ]]; then
+            echo "Disable PCIe Port PM"
+        else
+            echo "Defaults"
+        fi
+    }
+    OPTION="{{ ACTION }}"
+    if [ "$OPTION" == "help" ]; then
+        echo "Usage: ujust manage-pcie-power <option>"
+        echo "  <option>: Specify the option to skip the interactive prompt"
+        echo "  Use 'enable' to disable PCIe Port Power Management"
+        echo "  Use 'disable' to restore PCIe Port Power Management defaults"
+        echo "  Use 'status' to print the current fix state"
+        exit 0
+    elif [ "$OPTION" == "status" ]; then
+        get_status_token
+        exit 0
+    fi
+    echo -e "This script manages PCIe Port Power Management for maximum hardware stability."
+    echo -e "Disabling PCIe Port Power Management prevents the PCIe bus from entering low-power states that can cause micro-stuttering in games, latency spikes for NVMe drives, or wake-from-sleep issues on modern AMD Ryzen systems."
+    echo -e "Recommended for users seeking the lowest possible system latency."
+    echo -e "\nCurrent setting: $(get_current_status)\n"
+    if [ -z "$OPTION" ]; then
+        OPTION=$(gum choose "Disable PCIe Port PM" "Restore Defaults" "Exit without changes")
+    fi
+
+    case "$OPTION" in
+      "Disable PCIe Port PM"|enable)
+        if echo "$CURRENT_KARGS" | grep -q "pcie_port_pm=off"; then
+            gum style --foreground 212 "Notice: PCIe Port PM fix is already applied."
+        else
+            echo "Disabling PCIe Port Power Management..."
+            rpm-ostree kargs --append-if-missing='pcie_port_pm=off'
+            echo "Done! Please reboot to apply changes."
+        fi
+        ;;
+      "Restore Defaults"|disable)
+        if ! echo "$CURRENT_KARGS" | grep -q "pcie_port_pm=off"; then
+            gum style --foreground 117 "Notice: System is already at defaults."
+        else
+            echo "Restoring PCIe Port Power Management defaults..."
+            rpm-ostree kargs --delete='pcie_port_pm=off' 2>/dev/null || true
+            echo "Defaults restored. Please reboot."
+        fi
+        ;;
+      "Exit without changes"|*)
         echo "No changes made."
         ;;
     esac

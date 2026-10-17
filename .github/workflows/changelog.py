@@ -2,18 +2,24 @@ from itertools import product
 import subprocess
 import json
 import os
+import sys
 import tempfile
 import time
+from pathlib import Path
 from typing import Any
 import re
 from collections import defaultdict
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+# build.py (repo root) is the single source of truth for the published
+# image list -- also used by build.yml, build_iso.yml, and clean.yml. This
+# used to be its own hand-maintained copy here, which could (and did) drift
+# from the real list.
+from build import IMAGES as _BUILD_IMAGES
+
 REGISTRY = "ghcr.io/mrchandy/"
 
-
-IMAGES = [
-    "bazzite-niri",
-]
+IMAGES = sorted(_BUILD_IMAGES)
 
 RETRIES = 3
 RETRY_WAIT = 5
@@ -21,6 +27,9 @@ FEDORA_PATTERN = re.compile(r"\.fc\d\d")
 EPOCH_PATTERN = re.compile(r"^\d+:")
 STABLE_START_PATTERN = re.compile(r"\d\d\.\d")
 OTHER_START_PATTERN = lambda target: re.compile(rf"{target}-\d\d\.\d")
+TAG_NUM_PATTERN = re.compile(r"(\d+)")
+PKGREL_PATTERN = re.compile(r"\{pkgrel:[^}]+\}")
+LTS_KERNEL_PATTERN = re.compile(r"^kernel(-|$)")
 
 PATTERN_ADD = "\n| ✨ | {name} | | {version} |"
 PATTERN_CHANGE = "\n| 🔄 | {name} | {prev} | {new} |"
@@ -51,18 +60,28 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | Name | Version |
 | --- | --- |
 | **Kernel** | {pkgrel:kernel-core} |
+| **Kernel (Nvidia LTS)** | {pkgrel:kernel-core-lts} |
 | **Firmware** | {pkgrel:atheros-firmware} |
 | **Mesa** | {pkgrel:mesa-filesystem} |
 | **Gamescope** | {pkgrel:terra-gamescope} |
 | **Gamescope Session** | {pkgrel:gamescope-session} |
+| **MangoHUD** | {pkgrel:terra-mangohud} |
 | **InputPlumber** | {pkgrel:inputplumber} |
 | **OpenGamepadUI** | {pkgrel:opengamepadui} |
 | **PowerStation** | {pkgrel:powerstation} |
 | **SteamOS-Manager** | {pkgrel:steamos-manager-powerstation} |
+| **UMU Launcher** | {pkgrel:umu-launcher} |
 | **Bazaar** | {pkgrel:bazaar} |
 | **Niri** | {pkgrel:niri} |
 | **DMS** | {pkgrel:dms} |
 | **Quickshell** | {pkgrel:quickshell-git} |
+| **Distrobox** | {pkgrel:distrobox} |
+| **Gnome** | {pkgrel:gnome-control-center-filesystem} |
+| **KDE** | {pkgrel:plasma-desktop} |
+| **Waydroid** | {pkgrel:waydroid} |
+| **Waydroid (Nvidia)** | {pkgrel:waydroid-nvidia} |
+| **Nvidia Open** | {pkgrel:nvidia-kmod-common} |
+| **Nvidia LTS** | {pkgrel:nvidia-kmod-common-lts} |
 
 {changes}
 
@@ -81,6 +100,8 @@ This is an automatically generated changelog for release `{curr}`."""
 BLACKLIST_VERSIONS = [
     "kernel",
     "kernel-core",
+    "kernel-lts",
+    "kernel-core-lts",
     "mesa-filesystem",
     "terra-gamescope",
     "gamescope-session",
@@ -216,7 +237,30 @@ def parse_sbom_packages(sbom: dict) -> dict[str, str]:
     return packages
 
 
-def get_tags(target: str, manifests: dict[str, Any]):
+def tag_sort_key(tag: str):
+    """Order tags numerically, so that e.g. `.10` sorts after `.2`."""
+    return [
+        int(part) if part.isdigit() else part
+        for part in re.split(TAG_NUM_PATTERN, tag)
+    ]
+
+
+def get_release_tag(manifests: dict[str, Any]):
+    versions = set()
+    for img, manifest in manifests.items():
+        version = manifest.get("Labels", {}).get("org.opencontainers.image.version")
+        if version:
+            versions.add(version)
+        else:
+            print(f"Warning: {img} has no version label")
+
+    assert versions, "No image carries a version label"
+    if len(versions) > 1:
+        print(f"Warning: images disagree on the version tag: {sorted(versions)}")
+    return max(versions, key=tag_sort_key)
+
+
+def get_prev_tag(target: str, manifests: dict[str, Any], curr: str):
     tags = set()
 
     # Select random manifest to get reference tags from
@@ -238,9 +282,12 @@ def get_tags(target: str, manifests: dict[str, Any]):
             if tag not in manifest["RepoTags"]:
                 tags.remove(tag)
 
-    tags = list(sorted(tags))
-    assert len(tags) > 2, "No current and previous tags found"
-    return tags[-2], tags[-1]
+    curr_key = tag_sort_key(curr)
+    tags = sorted(
+        (t for t in tags if tag_sort_key(t) < curr_key), key=tag_sort_key
+    )
+    assert tags, f"No tag older than {curr} found"
+    return tags[-1]
 
 
 def get_packages(tag: str):
@@ -267,12 +314,12 @@ def is_nvidia(img: str, lts: bool):
         return "nvidia-open" in img or "deck-nvidia" in img
 
 
-def get_package_groups(prev_tag: str, curr_tag: str):
+def get_package_groups(prev_tag: str, curr_ref: str):
     common = set()
     others = {k: set() for k in OTHER_NAMES.keys()}
 
-    print(f"\nFetching current packages for {curr_tag}...")
-    npkg = get_packages(curr_tag)
+    print(f"\nFetching current packages for {curr_ref}...")
+    npkg = get_packages(curr_ref)
     print(f"\nFetching previous packages for {prev_tag}...")
     ppkg = get_packages(prev_tag)
 
@@ -333,7 +380,9 @@ def get_versions(packages: dict[str, dict[str, str]]):
     versions = {}
     for img, img_pkgs in packages.items():
         for pkg, v in img_pkgs.items():
-            if is_nvidia(img, lts=True) and "nvidia" in pkg:
+            if is_nvidia(img, lts=True) and (
+                "nvidia" in pkg or re.match(LTS_KERNEL_PATTERN, pkg)
+            ):
                 pkg += "-lts"
             v = re.sub(EPOCH_PATTERN, "", v)
             versions[pkg] = re.sub(FEDORA_PATTERN, "", v)
@@ -437,7 +486,7 @@ def generate_changelog(
     prev_manifests,
     manifests,
 ):
-    common, others, curr_packages, prev_packages = get_package_groups(prev_tag, curr_tag)
+    common, others, curr_packages, prev_packages = get_package_groups(prev_tag, target)
     versions = get_versions(curr_packages)
     prev_versions = get_versions(prev_packages)
 
@@ -487,6 +536,8 @@ def generate_changelog(
                 PATTERN_PKGREL_CHANGED.format(prev=prev_versions[pkg], new=v),
             )
 
+    changelog = re.sub(PKGREL_PATTERN, "N/A", changelog)
+
     changes = ""
     changes += get_commits(prev_manifests, manifests, workdir)
     common = calculate_changes(common, prev_versions, versions)
@@ -522,7 +573,8 @@ def main():
         target = "stable"
 
     manifests = get_manifests(target)
-    prev, curr = get_tags(target, manifests)
+    curr = get_release_tag(manifests)
+    prev = get_prev_tag(target, manifests, curr)
     print(f"Previous tag: {prev}")
     print(f" Current tag: {curr}")
 

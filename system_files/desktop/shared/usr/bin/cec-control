@@ -49,13 +49,17 @@ function perform_standby {
         # Kernel CEC path
         cec-ctl -d "$CEC_DEVICE" --playback 2>/dev/null || true
         
-        for id in $CEC_TVID; do
+        for id in ${CEC_TVID[@]}; do
             cec-ctl -d "$CEC_DEVICE" --to "$id" --standby 2>/dev/null || \
                 echo "Warning: Failed to send standby to CEC device $id" >&2
+            
+            #delay after sending standby command, to prevent the TV's Standby response
+            #from being saved during the suspend process, and causing re-suspend on wake
+            sleep 5
         done
     else
         # libcec path
-        for id in $CEC_TVID; do
+        for id in ${CEC_TVID[@]}; do
             echo "standby $id" | cec-client ${args[@]}
         done
     fi
@@ -66,7 +70,7 @@ function perform_activate {
         # Kernel CEC path
         cec-ctl -d "$CEC_DEVICE" --playback 2>/dev/null || true
         
-        for id in $CEC_TVID; do
+        for id in ${CEC_TVID[@]}; do
             cec-ctl -d "$CEC_DEVICE" --to "$id" --image-view-on 2>/dev/null || \
                 echo "Warning: Failed to send image-view-on to CEC device $id" >&2
         done
@@ -82,7 +86,7 @@ function perform_activate {
         fi
     else
         # libcec path
-        for id in $CEC_TVID; do
+        for id in ${CEC_TVID[@]}; do
             echo "on $id" | cec-client ${args[@]}
         done
 

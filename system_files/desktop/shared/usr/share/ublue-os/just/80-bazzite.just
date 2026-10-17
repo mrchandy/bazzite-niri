@@ -21,7 +21,7 @@ _install-system-flatpaks:
 
 alias toggle-ssh := ssh
 
-# Manage SSH availability on boot. Options: status | enable | disable
+# Manage SSH availability. Options: status | enable | disable | start
 [group("network")]
 ssh ACTION="":
     #!/usr/bin/bash
@@ -32,6 +32,8 @@ ssh ACTION="":
         return 1
       elif [[ "$SSH_STATE" == *enabled* ]]; then
         echo "enable"
+      elif systemctl is-active --quiet sshd; then
+        echo "start"
       else
         echo "disable"
       fi
@@ -54,6 +56,7 @@ ssh ACTION="":
       echo "  <option>: Specify the option to skip the interactive prompt"
       echo "  Use 'enable' to enable SSH on boot"
       echo "  Use 'disable' to disable SSH on boot"
+      echo "  Use 'start' to start SSH for this boot only, disabling SSH on boot"
       exit 0
     elif [ "$OPTION" == "" ]; then
       # Display current status
@@ -66,22 +69,28 @@ ssh ACTION="":
       fi
       # Prompt user for action
       echo "Choose an option:"
-      OPTION=$(ugum choose "Enable SSH" "Disable SSH" "Exit without saving")
+      OPTION=$(ugum choose "Enable SSH" "Disable SSH" "Start until restart" "Exit without saving")
     fi
     case "$OPTION" in
       "Enable SSH"|enable)
         echo "Enabling SSH on boot..."
-        sudo systemctl enable sshd
-        sudo systemctl start sshd
+        sudo systemctl enable --now sshd
         echo -e "SSH is now ${green}Enabled${normal}. You can SSH using:"
         echo -e "${bold}${USER}@${IP_ADDRESS}${normal}"
         echo " "
         ;;
       "Disable SSH"|disable)
         echo "Disabling SSH on boot..."
-        sudo systemctl disable sshd
-        sudo systemctl stop sshd
+        sudo systemctl disable --now sshd
         echo -e "SSH is now ${yellow}Disabled${normal}."
+        echo " "
+        ;;
+      "Start until restart"|start)
+        echo "Starting SSH for this boot only..."
+        sudo systemctl disable sshd || exit $?
+        sudo systemctl start sshd || exit $?
+        echo -e "SSH is now ${green}Running${normal} until restart. You can SSH using:"
+        echo -e "${bold}${USER}@${IP_ADDRESS}${normal}"
         echo " "
         ;;
       "Exit without saving"|*)
@@ -441,7 +450,7 @@ configure-grub ACTION="":
       apply_setting "$OPTION"
     fi
 
-# Toogle a ramoops config to save panic messages across crashes
+# Toggle a ramoops config to save panic messages across crashes
 [group("system")]
 toggle-save-panics ACTION="":
     #!/usr/bin/bash
@@ -838,6 +847,55 @@ configure-watchdog ACTION="":
       rpm-ostree kargs $WATCHDOG_KARGS
     fi
 
+# Configure AMD HDMI 2.1 (default: disabled, enables additional HDMI 2.1 features on AMD GPUs)
+[group("hardware")]
+configure-amd-hdmi21 ACTION="":
+    #!/usr/bin/bash
+    source /usr/lib/ujust/ujust.sh
+    OPTION={{ ACTION }}
+    get_status_token() {
+      if [[ "$(cat /proc/cmdline)" =~ amdgpu\.dcfeaturemask=0x402 ]]; then
+        echo "enable"
+      else
+        echo "disable"
+      fi
+    }
+    get_current_status() {
+      AMD_HDMI21_STATE="$(rpm-ostree kargs)"
+      if [[ "$AMD_HDMI21_STATE" =~ amdgpu\.dcfeaturemask=0x402 ]]; then
+        echo "${green}${bold}Enabled${normal}"
+      else
+        echo "${yellow}${bold}Disabled${normal}"
+      fi
+    }
+    if [ "$OPTION" == "help" ]; then
+      echo "Usage: ujust configure-amd-hdmi21 <option>"
+      echo "  <option>: Specify the quick option to skip the prompt"
+      echo "  Use 'status' to print the current status"
+      echo "  Use 'enable' to select Enable AMD HDMI 2.1"
+      echo "  Use 'disable' to select Disable AMD HDMI 2.1"
+      exit 0
+    elif [ "$OPTION" == "status" ]; then
+      get_status_token
+      exit 0
+    elif [ "$OPTION" == "" ]; then
+      echo "${bold}AMD HDMI 2.1 configuration${normal}"
+      echo "Enabling this sets amdgpu.dcfeaturemask=0x402, which unlocks additional FreeSync"
+      echo "functionality on AMD GPUs, however it may cause flickering or instability on some displays"
+      echo "AMD HDMI 2.1 is $(get_current_status)"
+      OPTION=$(Choose "Enable AMD HDMI 2.1" "Disable AMD HDMI 2.1")
+    fi
+    if [[ "${OPTION,,}" =~ ^enable ]]; then
+      if [[ "$(rpm-ostree kargs)" =~ "amdgpu.dcfeaturemask" ]]; then
+        echo "Kernel argument already present or has conflicts, aborting..."
+        sleep 5
+        exit 1
+      fi
+      rpm-ostree kargs --append-if-missing=amdgpu.dcfeaturemask=0x402
+    elif [[ "${OPTION,,}" =~ ^disable ]]; then
+      rpm-ostree kargs --delete-if-present=amdgpu.dcfeaturemask=0x402
+    fi
+
 # Configure snapshotting for /var/home
 [group("system")]
 configure-snapshots ACTION="":
@@ -863,9 +921,9 @@ configure-snapshots ACTION="":
       echo "Usage: ujust configure-snapshots <option>"
       echo "  <option>: Specify the quick option to skip the prompt"
       echo "  Use 'status' to print the current status"
-      echo "  Use 'enable' enable snapshotting of /var/home"
-      echo "  Use 'disable' disable snapshotting of /var/home"
-      echo "  Use 'wipe' disable snapshotting and remove all automatic snapshots of /var/home"
+      echo "  Use 'enable' to enable snapshotting of /var/home"
+      echo "  Use 'disable' to disable snapshotting of /var/home"
+      echo "  Use 'wipe' to disable snapshotting and remove all automatic snapshots of /var/home"
       exit 0
     elif [ "$OPTION" == "status" ]; then
       get_status_token
@@ -882,6 +940,86 @@ configure-snapshots ACTION="":
     elif [[ "${OPTION,,}" =~ ^wipe ]]; then
       /usr/libexec/bazzite-snapper-config wipe
     fi
+
+# Configure Windows/Mac-like US international keyboard layout dead keys behavior
+[group("system")]
+configure-us-intl-dead-keys:
+    #!/usr/bin/bash
+    source /usr/lib/ujust/ujust.sh
+    INPUT_MODULE_ENV_FILE="$HOME/.config/environment.d/90-fcitx.conf"
+    XCOMPOSE_FILE="$HOME/.XCompose"
+    XCOMPOSE_REMOTE_LOCATION="https://raw.githubusercontent.com/raelgc/win_us_intl/refs/heads/master/.XCompose"
+    CURRENT="Not applied"
+    CURRENT_COLOR=${red}
+    if [[ -f "${INPUT_MODULE_ENV_FILE}" && -f "${XCOMPOSE_FILE}" ]]; then
+        CURRENT="Applied"
+        CURRENT_COLOR=${green}
+    fi
+    if [[ -z "$OPTION" ]]; then
+        echo -e "US international dead keys behavior override: ${bold}${CURRENT_COLOR}${CURRENT}${normal}"
+        echo ""
+        echo "Applies a Windows/Mac-like behavior for US international keyboard layouts with dead keys."
+        echo "When enabled, dead keys will produce accented characters directly (e.g., ' + e = é)."
+        echo "This will set the input method module to 'fcitx' and download a custom .XCompose file."
+        echo ""
+        echo "This requires the \"US International with dead keys\" input method keyboard layout to be selected"
+        echo "in your system settings and will only take effect after a logout/restart."
+        echo ""
+        echo "Some flatpak applications (e.g. Discord) may not respect this setting due to sandboxing limitations."
+        echo "Use the override option in this script to apply environment variables to those applications."
+        echo ""
+        OPTION="$(ugum choose "Apply to user" "Remove from user" "Apply to flatpak environment" "Remove from flatpak environment" "Exit without saving")"
+    fi
+    case "$OPTION" in
+        "Apply to user")
+            curl -fsSL "${XCOMPOSE_REMOTE_LOCATION}" -o "${XCOMPOSE_FILE}"
+            mkdir -p "$(dirname "${INPUT_MODULE_ENV_FILE}")"
+            cat > "${INPUT_MODULE_ENV_FILE}" <<-EOF
+    export GTK_IM_MODULE=fcitx
+    export QT_IM_MODULE=fcitx
+    export SDL_IM_MODULE=fcitx
+    export XMODIFIERS=@im=fcitx
+    export XCOMPOSEFILE=$HOME/.XCompose
+    EOF
+            echo "Please logout/restart for changes to take effect."
+            ;;
+        "Remove from user")
+            rm -f "${INPUT_MODULE_ENV_FILE}" "${XCOMPOSE_FILE}"
+            echo -e "US international dead keys behavior override ${bold}${red}removed${normal}."
+            echo "Please logout/restart for changes to take effect."
+            ;;
+        "Apply to flatpak environment")
+            SELECTION=$(flatpak list --columns=name,application | fzf)
+            APP_ID=$(echo "${SELECTION}" | awk -F'\t' '{print $2}')
+            if [[ -z "${APP_ID}" ]]; then
+              echo "No app selected. Aborting."
+              exit 0
+            fi
+            flatpak override --user --env=GTK_IM_MODULE=fcitx "${APP_ID}"
+            flatpak override --user --env=QT_IM_MODULE=fcitx "${APP_ID}"
+            flatpak override --user --env=SDL_IM_MODULE=fcitx "${APP_ID}"
+            flatpak override --user --env=XMODIFIERS=@im=fcitx "${APP_ID}"
+            flatpak override --user --env=XCOMPOSEFILE=$HOME/.XCompose "${APP_ID}"
+            echo -e "Flatpak environment overrides ${bold}${green}applied${normal} to ${bold}${app}${normal}"
+            ;;
+        "Remove from flatpak environment")
+            SELECTION=$(flatpak list --columns=name,application | fzf)
+            APP_ID=$(echo "${SELECTION}" | awk -F'\t' '{print $2}')
+            if [[ -z "${APP_ID}" ]]; then
+              echo "No app selected. Aborting."
+              exit 0
+            fi
+            flatpak override --user --unset-env=GTK_IM_MODULE "${APP_ID}"
+            flatpak override --user --unset-env=QT_IM_MODULE "${APP_ID}"
+            flatpak override --user --unset-env=SDL_IM_MODULE "${APP_ID}"
+            flatpak override --user --unset-env=XMODIFIERS "${APP_ID}"
+            flatpak override --user --unset-env=XCOMPOSEFILE "${APP_ID}"
+            echo -e "Flatpak environment overrides ${bold}${red}removed${normal} from ${bold}${APP_ID}${normal}"
+            ;;
+        *)
+            echo "No changes made."
+            ;;
+    esac
 
 # Enable a Bluefin-style CLI experience
 [group("development")]

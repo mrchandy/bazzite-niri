@@ -18,7 +18,7 @@ BAZZITE_CONFIG_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/bazzite"
 mkdir -p "$BAZZITE_CONFIG_DIR"
 
 # SCRIPT VERSION
-USER_SETUP_VER=49
+USER_SETUP_VER=57
 USER_SETUP_VER_FILE="$BAZZITE_CONFIG_DIR/version"
 USER_SETUP_FEDORA_VER_FILE="$BAZZITE_CONFIG_DIR/fedora_version"
 USER_SETUP_IMAGE_VER_FILE=$BAZZITE_CONFIG_DIR/image_name""
@@ -90,6 +90,9 @@ if [[ $BASE_IMAGE_NAME =~ "kinoite" ]]; then
 else
   echo 'Running setup for Silverblue'
 
+  echo "Enabling Bazaar Integration extension"
+  gnome-extensions enable bazaar-integration@kolunmi.github.io
+
   PTYXIS_THEME_DIR="/etc/skel/.local/share/org.gnome.Ptyxis/palettes"
   PTYXIS_DIR="$HOME/.local/share/org.gnome.Ptyxis/palettes"
   mkdir -p "$PTYXIS_DIR"
@@ -135,6 +138,10 @@ else
         echo 'Applying font fix for Framework 13'
         dconf write /org/gnome/desktop/interface/text-scaling-factor 1.25
       fi
+      if [[ $SYS_ID == "Laptop (12"* ]]; then
+        echo 'Enabling improved touch screen behavior for Framework 12'
+        gnome-extensions enable touchup@mityax
+      fi
       touch "$BAZZITE_CONFIG_DIR/framework-initialized"
     fi
   fi
@@ -178,8 +185,82 @@ if [[ $IMAGE_NAME =~ "deck" ]]; then
   # SDGyroDSU Setup
   if /usr/libexec/hwsupport/valve-hardware; then
     systemctl --user enable --now sdgyrodsu.service
+    if [ ! -f "${XDG_DATA_HOME:-$HOME/.local/share}/applications/opengamepadui.desktop" ]; then
+      cp /usr/share/applications/opengamepadui.desktop "${XDG_DATA_HOME:-$HOME/.local/share}/applications/opengamepadui.desktop"
+      sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nNoDisplay=true@g' "${XDG_DATA_HOME:-$HOME/.local/share}/applications/opengamepadui.desktop"
+    fi
   else
     systemctl --user disable --now sdgyrodsu.service
+    if [ -f "${XDG_DATA_HOME:-$HOME/.local/share}/applications/opengamepadui.desktop" ]; then
+      rm -rf "${XDG_DATA_HOME:-$HOME/.local/share}/applications/opengamepadui.desktop"
+    fi
+  fi
+
+  if ! /usr/libexec/hwsupport/handheld-hardware; then
+    systemctl --user mask cecd.service
+    systemctl --user mask steamos-manager-configure-cecd.service
+  fi
+
+  # Forcefully set steamos-manager default session. *Should* help
+  # combat steamos-manager not switching to desktop from a gamescope
+  # session.
+  if [[ "${BASE_IMAGE_NAME}" == "kinoite" ]]; then
+    DEFAULT_DESKTOP_SESSION="plasma.desktop"
+  else
+    DEFAULT_DESKTOP_SESSION="gnome.desktop"
+  fi
+  steamosctl set-default-desktop-session "${DEFAULT_DESKTOP_SESSION}"
+  echo "Set default desktop session to: ${DEFAULT_DESKTOP_SESSION}"
+
+  # Enable desktop TDP control extension/applet
+  if /usr/libexec/hwsupport/powerstation-hardware || \
+    /usr/libexec/hwsupport/powerstation-htpc-hardware || \
+    /usr/libexec/hwsupport/steamos-manager-hardware; then
+    if [[ $BASE_IMAGE_NAME =~ "kinoite" ]]; then
+      echo "Enabling TDP Control applet on KDE"
+      qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
+        const batteryApplet = "org.kde.plasma.battery";
+        const tdpApplet = "org.opengamingcollective.tdpcontrol";
+
+        for (const panel of panels()) {
+          for (const tray of panel.widgets("org.kde.plasma.systemtray")) {
+            const systrayId = tray.readConfig("SystrayContainmentId");
+            const systray = systrayId ? desktopById(systrayId) : null;
+            if (!systray) {
+              continue;
+            }
+
+            systray.currentConfigGroup = ["General"];
+            const extraItems = systray.readConfig("extraItems", "").split(",").filter(item => item);
+            const updatedItems = [];
+            let tdpAdded = false;
+
+            for (const item of extraItems) {
+              if (item === tdpApplet) {
+                continue;
+              }
+
+              updatedItems.push(item);
+              if (item === batteryApplet) {
+                updatedItems.push(tdpApplet);
+                tdpAdded = true;
+              }
+            }
+
+            if (!tdpAdded) {
+              updatedItems.push(tdpApplet);
+            }
+
+            systray.writeConfig("extraItems", updatedItems);
+            systray.reloadConfig();
+          }
+        }
+      '
+    else
+      echo "Enabling TDP Control & Add-to-Steam extension on GNOME"
+      gnome-extensions enable add-to-steam@pupper.space
+      gnome-extensions enable tdp-control@opengamingcollective.org
+    fi
   fi
 
   # Legion Rotation Fix
