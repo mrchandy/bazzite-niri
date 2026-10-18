@@ -24,7 +24,11 @@ for copr in \
     ublue-os/staging \
     ublue-os/packages \
     ycollet/audinux \
-    che/nerd-fonts; \
+    che/nerd-fonts \
+    yalter/niri-git \
+    scottames/ghostty \
+    avengemedia/danklinux \
+    avengemedia/dms-git; \
 do
     echo "    Enabling copr: ${copr}..."
     dnf5 -y copr enable "${copr}"

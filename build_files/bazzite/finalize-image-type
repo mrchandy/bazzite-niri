@@ -151,7 +151,11 @@ for copr in \
     ublue-os/staging \
     ublue-os/packages \
     ycollet/audinux \
-    che/nerd-fonts; do
+    che/nerd-fonts \
+    yalter/niri-git \
+    scottames/ghostty \
+    avengemedia/danklinux \
+    avengemedia/dms-git; do
     dnf5 -y copr disable "${copr}"
 done
 
@@ -212,7 +216,7 @@ systemctl enable greenboot-healthcheck.service
 systemctl enable greenboot-set-rollback-trigger.service
 systemctl disable force-wol.service
 systemctl --global enable bazzite-dynamic-fixes.service
-systemctl --global enable ntfs-nag.service
+#systemctl --global enable ntfs-nag.service
 systemctl enable dmemcg-booster-system.service
 systemctl --global enable dmemcg-booster-user.service
 systemctl enable cardwired.service

@@ -32,6 +32,7 @@ dnf5 -y swap --allowerasing --repo terra-extras wireplumber terra-wireplumber
 echo "==> Installing Terra BlueZ packages..."
 dnf5 -y install \
     --allowerasing \
+    --skip-broken \
     --repo terra-extras \
     terra-bluez \
     terra-bluez-libs \

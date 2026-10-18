@@ -22,6 +22,7 @@ popd
 
 # -- Remove existing kernel packages --
 # Erase all existing kernel-related packages to avoid conflicts.
+# kernel-tools-libs, and kernel-tools do not exist on ublue/main so they fail the build. Removed those packages in the declare.
 echo "==> Removing existing kernel packages..."
 declare -a KERNEL_PACKAGES=(
     "kernel"
@@ -29,8 +30,6 @@ declare -a KERNEL_PACKAGES=(
     "kernel-modules"
     "kernel-modules-core"
     "kernel-modules-extra"
-    "kernel-tools-libs"
-    "kernel-tools"
 )
 
 for pkg in "${KERNEL_PACKAGES[@]}"; do

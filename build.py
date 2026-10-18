@@ -67,83 +67,16 @@ DEFAULTS = {
 LTS_KERNEL_VERSION = "6.18.56-ogc1.1.fc45"
 
 IMAGES: dict[str, dict] = {
-    "bazzite": {
-        "base_image_name": "kinoite",
+    "bazzite-niri": {
+        "base_image_name": "base",
         "container_target": "bazzite",
         "nvidia_base": "bazzite",
         "nvidia_flavor": "nvidia-lts",
         "install_nvidia": False,
-    },
-    "bazzite-gnome": {
-        "base_image_name": "silverblue",
-        "container_target": "bazzite",
-        "nvidia_base": "bazzite",
-        "nvidia_flavor": "nvidia-lts",
-        "install_nvidia": False,
-    },
-    "bazzite-deck": {
-        "base_image_name": "kinoite",
-        "container_target": "bazzite-deck",
-        "nvidia_base": "bazzite-deck",
-        "nvidia_flavor": "nvidia-lts",
-        "install_nvidia": False,
-    },
-    "bazzite-deck-gnome": {
-        "base_image_name": "silverblue",
-        "container_target": "bazzite-deck",
-        "nvidia_base": "bazzite-deck",
-        "nvidia_flavor": "nvidia-lts",
-        "install_nvidia": False,
-    },
-    "bazzite-deck-nvidia": {
-        "base_image_name": "kinoite",
-        "container_target": "bazzite-nvidia",
-        "nvidia_base": "bazzite-deck",
-        "nvidia_flavor": "nvidia-open",
-        "install_nvidia": True,
-    },
-    "bazzite-deck-nvidia-gnome": {
-        "base_image_name": "silverblue",
-        "container_target": "bazzite-nvidia",
-        "nvidia_base": "bazzite-deck",
-        "nvidia_flavor": "nvidia-open",
-        "install_nvidia": True,
-    },
-    "bazzite-nvidia": {
-        "base_image_name": "kinoite",
-        "container_target": "bazzite-nvidia",
-        "nvidia_base": "bazzite",
-        "nvidia_flavor": "nvidia-lts",
-        "install_nvidia": True,
-        "kernel_flavor": "ogc-lts",
-        "kernel_version": LTS_KERNEL_VERSION,
-    },
-    "bazzite-gnome-nvidia": {
-        "base_image_name": "silverblue",
-        "container_target": "bazzite-nvidia",
-        "nvidia_base": "bazzite",
-        "nvidia_flavor": "nvidia-lts",
-        "install_nvidia": True,
-        "kernel_flavor": "ogc-lts",
-        "kernel_version": LTS_KERNEL_VERSION,
-    },
-    "bazzite-nvidia-open": {
-        "base_image_name": "kinoite",
-        "container_target": "bazzite-nvidia",
-        "nvidia_base": "bazzite",
-        "nvidia_flavor": "nvidia-open",
-        "install_nvidia": True,
-    },
-    "bazzite-gnome-nvidia-open": {
-        "base_image_name": "silverblue",
-        "container_target": "bazzite-nvidia",
-        "nvidia_base": "bazzite",
-        "nvidia_flavor": "nvidia-open",
-        "install_nvidia": True,
     },
 }
 
-DEFAULT_IMAGE = "bazzite"
+DEFAULT_IMAGE = "bazzite-niri"
 
 IMAGE_LABELS = {
     "io.artifacthub.package.logo-url": "https://raw.githubusercontent.com/ublue-os/bazzite/main/repo_content/logo.png",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Configure KDE (Kinoite) or GNOME desktop environment depending on the
+# Configure KDE (Kinoite), GNOME, or Niri desktop environment depending on the
 # BASE_IMAGE_NAME variable, plus common packages.
 #
 set -xeuo pipefail
@@ -14,6 +14,8 @@ echo "==> Configuring desktop environment..."
 
 if [[ "${BASE_IMAGE_NAME}" == "kinoite" ]]; then
     /ctx/bazzite/desktop_env/configure-kde
+elif [[ "${BASE_IMAGE_NAME}" == "base" ]]; then
+    /ctx/bazzite/desktop_env/configure-niri
 else
     /ctx/bazzite/desktop_env/configure-gnome
 fi
