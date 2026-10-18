@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -ouex pipefail
 
 # Install the selinux-policy-devel package to make the policies
