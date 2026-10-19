@@ -79,7 +79,10 @@ dnf -y install \
 #
 # Enable services for Niri Desktop environment
 #
-sed -i '/gnome_keyring.so/ s/-auth/auth/ ; /gnome_keyring.so/ s/-session/session/' /etc/pam.d/greetd
+# Insert the auth line after the system-auth line
+sed -i '/auth\s*substack\s*system-auth/a auth       optional    pam_gnome_keyring.so' /etc/pam.d/greetd
+# Insert the session line after the system-auth line in the session block
+sed -i '/session\s*include\s*system-auth/a session    optional    pam_gnome_keyring.so auto_start' /etc/pam.d/greetd
 cat /etc/pam.d/greetd
 add_wants_niri() {
     sed -i "s/\[Unit\]/\[Unit\]\nWants=$1/" "/usr/lib/systemd/user/niri.service"
