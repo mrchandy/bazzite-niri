@@ -40,7 +40,7 @@ ARG NVIDIA_FLAVOR="${NVIDIA_FLAVOR:-nvidia-open}"
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
 FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-nvidia
-FROM ghcr.io/ublue-os/brew:latest@sha256:5bdf54dc7c21c22db29df6550e3711788719c5123549ea6dc5645d5af47795e3 AS brew
+FROM ghcr.io/ublue-os/brew:latest@sha256:c201bc801e4828849e8e36c4adcb5c0f38d35ac3ff9546a0ecab0fd2beabf51f AS brew
 
 FROM scratch AS ctx
 COPY build_files /
@@ -117,7 +117,7 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release{,-extras,-mesa} && \
     dnf5 -y config-manager addrepo --overwrite --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
     sed -i 's@enabled=0@enabled=1@g' /etc/yum.repos.d/negativo17-fedora-multimedia.repo && \
-    dnf5 -y config-manager setopt "*terra*".priority=1 "*terra*".exclude="nerd-fonts scx-tools scx-scheds" && \
+    dnf5 -y config-manager setopt "*terra*".priority=1 "*terra*".exclude="nerd-fonts scx-tools scx-scheds python3-protobuf zlib-devel uupd" && \
     dnf5 -y config-manager setopt "terra-mesa".enabled=false && \
     dnf5 -y config-manager setopt "*bazzite*".priority=2 && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
@@ -195,8 +195,8 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
-    dnf5 -y install \
-        $(/ctx/ghcurl https://api.github.com/repos/ublue-os/cicpoffs/releases/latest | jq -r --arg name "cicpoffs-fc${FEDORA_VERSION}.rpm" '.assets[] | select(.name == $name).browser_download_url') && \
+    dnf5 -y install --enable-repo=terra --enable-repo=terra-extras \
+        cicpoffs && \
     dnf5 -y copr enable bieszczaders/kernel-cachyos-addons && \
     dnf5 -y install \
         scx-scheds \
@@ -302,8 +302,19 @@ RUN --mount=type=cache,dst=/var/cache \
     systemctl mask iscsi && \
     systemctl mask systemd-remount-fs.service && \
     systemctl mask fedora-atomic-desktop-appstream-cache-refresh && \
-    mkdir -p /usr/lib/extest/ && \
-    /ctx/ghcurl "$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest | jq -r '.assets[] | select(.name| test(".*so$")).browser_download_url')" -Lo /usr/lib/extest/libextest.so && \
+    mkdir -p /usr/lib/extest /usr/lib64/extest; \
+    EXTEST_RELEASE=$(/ctx/ghcurl https://api.github.com/repos/ublue-os/extest/releases/latest) && \
+    for asset in libextest.so libextest64.so; do \
+        url=$(jq -r --arg name "${asset}" \
+            '.assets[] | select(.name == $name).browser_download_url' <<< "${EXTEST_RELEASE}"); \
+        if [[ "${asset}" == "libextest64.so" ]]; then \
+            destination=/usr/lib64/extest/libextest.so; \
+        else \
+            destination=/usr/lib/extest/libextest.so; \
+        fi; \
+        /ctx/ghcurl "${url}" -Lo "${destination}"; \
+    done && \
+    unset -v EXTEST_RELEASE asset url destination && \
     /ctx/ghcurl "https://github.com/ykshek/Sunshine/raw/1347f9ef290c089b815cf186f7d361470bdb9ef7/src_assets/linux/misc/postinst" -Lo /usr/libexec/sunshine-postinst && \
     chmod +x /usr/libexec/sunshine-postinst && \
     setfattr -n user.component -v "extest" /usr/lib/extest/libextest.so && \
