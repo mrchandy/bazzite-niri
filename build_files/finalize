@@ -42,7 +42,11 @@ for copr in \
     ublue-os/staging \
     ublue-os/packages \
     ycollet/audinux \
-    che/nerd-fonts; do
+    che/nerd-fonts \
+    yalter/niri-git \
+    scottames/ghostty \
+    avengemedia/danklinux \
+    avengemedia/dms-git; do
     dnf5 -y copr disable "${copr}"
 done
 
