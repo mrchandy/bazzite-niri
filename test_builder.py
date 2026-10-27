@@ -111,45 +111,35 @@ def test_unknown_image_raises_with_valid_list():
 # --- resolve_source_version ---
 
 def test_source_version_stable():
-    version, pretty = b.resolve_source_version(
-        ref_name="main", upstream_tag="44", sha_short="abc1234", fedora_version=44,
+    pretty = b.resolve_pretty_version(
+        ref_name="main", version="45.20261013", sha_short="abc1234", fedora_version=45,
     )
-    assert version == "44"
-    assert pretty == "Stable (F44)"
+    assert pretty == "Stable (F45.20261013)"
 
 
 def test_source_version_unstable():
-    version, pretty = b.resolve_source_version(
-        ref_name="unstable", upstream_tag="44", sha_short="abc1234", fedora_version=44,
+    pretty = b.resolve_pretty_version(
+        ref_name="unstable", version="unstable-45.20261013.2",
+        sha_short="abc1234", fedora_version=45,
     )
-    assert version == "unstable-44"
-    assert pretty == "Unstable (F44, #abc1234)"
+    assert pretty == "Unstable (F45.20261013.2, #abc1234)"
 
 
 def test_source_version_testing():
-    version, pretty = b.resolve_source_version(
-        ref_name="testing", upstream_tag="44", sha_short="abc1234", fedora_version=44,
+    pretty = b.resolve_pretty_version(
+        ref_name="testing", version="testing-45.20261014",
+        sha_short="c500b43", fedora_version=45,
     )
-    assert version == "testing-44"
-    assert pretty == "Testing (F44, #abc1234)"
+    assert pretty == "Testing (F45.20261014, #c500b43)"
 
 
 def test_source_version_pr_number_takes_priority_over_ref():
     # pr_number takes priority regardless of ref_name
-    version, pretty = b.resolve_source_version(
-        ref_name="unstable", upstream_tag="44", sha_short="abc1234",
-        fedora_version=44, pr_number="42",
+    pretty = b.resolve_pretty_version(
+        ref_name="unstable", version="unstable-45.20261013", sha_short="abc1234",
+        fedora_version=45, pr_number="42",
     )
-    assert version == "pr-44-42"
-    assert pretty == "PR (42, 44)"
-
-
-def test_strip_trailing_zero():
-    # Mirrors bash's ${UPSTREAM_TAG%\.[0-9]}: strips any trailing ".<digit>",
-    # not just ".0" -- that's the actual (slightly loose) upstream behavior.
-    assert b.strip_trailing_zero("44.0") == "44"
-    assert b.strip_trailing_zero("44.1") == "44"
-    assert b.strip_trailing_zero("44") == "44"
+    assert pretty == "PR (42, F45.20261013, #abc1234)"
 
 
 # --- release_version / dedup_version ---
@@ -213,10 +203,71 @@ def test_build_args_field_set_matches_ci():
         "BASE_IMAGE_NAME", "FEDORA_VERSION", "BASE_IMAGE", "IMAGE_NAME",
         "IMAGE_VENDOR", "IMAGE_BRANCH", "KERNEL_FLAVOR", "KERNEL_VERSION",
         "NVIDIA_FLAVOR", "NVIDIA_BASE", "SHA_HEAD_SHORT", "VERSION_TAG",
-        "VERSION_PRETTY", "ARCH",
+        "VERSION_PRETTY", "ARCH", "BUILD_DECK", "BUILD_NVIDIA",
     }
     assert args["SHA_HEAD_SHORT"] == "abc1234"  # never empty
 
+def test_build_args_build_no_deck_no_nvidia():
+    variants = [
+        "bazzite",
+        "bazzite-gnome",
+    ]
+
+    for variant_name in variants:
+        variant = b.get_variant(variant_name)
+        build_args = b.build_args(
+            variant, image_vendor="ublue-os", image_branch="main",
+            sha_head_short="abc1234", version_tag="44", version_pretty="Stable (F44)",
+        )
+        assert build_args["BUILD_DECK"] == "FALSE"
+        assert build_args["BUILD_NVIDIA"] == "FALSE"
+
+def test_build_args_build_deck_no_nvidia():
+    variants = [
+        "bazzite-deck",
+        "bazzite-deck-gnome",
+    ]
+
+    for variant_name in variants:
+        variant = b.get_variant(variant_name)
+        build_args = b.build_args(
+            variant, image_vendor="ublue-os", image_branch="main",
+            sha_head_short="abc1234", version_tag="44", version_pretty="Stable (F44)",
+        )
+        assert build_args["BUILD_DECK"] == "TRUE"
+        assert build_args["BUILD_NVIDIA"] == "FALSE"
+
+def test_build_args_build_nvidia_no_deck():
+    variants = [
+        "bazzite-nvidia",
+        "bazzite-gnome-nvidia",
+        "bazzite-nvidia-open",
+        "bazzite-gnome-nvidia-open",
+    ]
+
+    for variant_name in variants:
+        variant = b.get_variant(variant_name)
+        build_args = b.build_args(
+            variant, image_vendor="ublue-os", image_branch="main",
+            sha_head_short="abc1234", version_tag="44", version_pretty="Stable (F44)",
+        )
+        assert build_args["BUILD_DECK"] == "FALSE"
+        assert build_args["BUILD_NVIDIA"] == "TRUE"
+
+def test_build_args_build_nvidia_deck():
+    variants = [
+        "bazzite-deck-nvidia",
+        "bazzite-deck-nvidia-gnome",
+    ]
+
+    for variant_name in variants:
+        variant = b.get_variant(variant_name)
+        build_args = b.build_args(
+            variant, image_vendor="ublue-os", image_branch="main",
+            sha_head_short="abc1234", version_tag="44", version_pretty="Stable (F44)",
+        )
+        assert build_args["BUILD_DECK"] == "TRUE"
+        assert build_args["BUILD_NVIDIA"] == "TRUE"
 
 def test_labels_include_required_oci_fields():
     variant = b.get_variant("bazzite")
@@ -282,18 +333,30 @@ def test_version_dedups_against_tags_from_every_image(monkeypatch, capsys):
 def test_resolve_uses_precomputed_version(capsys):
     args = b.build_parser().parse_args([
         "resolve", "--image", "bazzite-deck", "--ref-name", "unstable",
-        "--upstream-tag", f"{FEDORA}.20260820.0", "--version", f"unstable-{FEDORA}.20260820.3",
+        "--version", f"unstable-{FEDORA}.20260820.3",
     ])
     assert b.cmd_resolve(args) == 0
     out = json.loads(capsys.readouterr().out)
     assert out["version"] == f"unstable-{FEDORA}.20260820.3"
     assert out["labels"]["org.opencontainers.image.version"] == f"unstable-{FEDORA}.20260820.3"
+    assert out["build_args"]["VERSION_TAG"] == f"unstable-{FEDORA}.20260820.3"
+    assert out["build_args"]["VERSION_PRETTY"] == f"Unstable (F{FEDORA}.20260820.3, #deadbee)"
+
+
+def test_resolve_testing_uses_our_version_without_inspecting_base(capsys):
+    args = b.build_parser().parse_args([
+        "resolve", "--ref-name", "testing", "--version", "testing-45.20261014",
+        "--sha", "c500b43",
+    ])
+    assert b.cmd_resolve(args) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["build_args"]["VERSION_TAG"] == "testing-45.20261014"
+    assert out["build_args"]["VERSION_PRETTY"] == "Testing (F45.20261014, #c500b43)"
 
 
 def test_resolve_rejects_version_for_another_fedora_release():
     args = b.build_parser().parse_args([
-        "resolve", "--image", "bazzite", "--upstream-tag", f"{FEDORA}.20260820.0",
-        "--version", f"{FEDORA - 1}.20260820",
+        "resolve", "--image", "bazzite", "--version", f"{FEDORA - 1}.20260820",
     ])
     assert b.cmd_resolve(args) == 1
 
@@ -329,7 +392,6 @@ def test_build_ci_mode_reads_resolved_json(tmp_path, caplog):
         ]
     )
     assert b.cmd_build(args) == 0
-    assert "--target bazzite-nvidia" in caplog.text
     assert "--build-arg=VERSION_TAG=44" in caplog.text
     assert "--secret id=GITHUB_TOKEN,env=GITHUB_TOKEN" in caplog.text
     assert "--tag raw-img" in caplog.text
@@ -396,6 +458,19 @@ def test_rechunk_no_privileged_flag(caplog):
     args = b.build_parser().parse_args(["--dry-run", "rechunk"])
     assert b.cmd_rechunk(args) == 0
     assert "--privileged" not in caplog.text
+
+
+def test_sbom_scans_mounted_image_without_exporting(capsys, caplog):
+    caplog.set_level(logging.INFO, logger="build")
+    args = b.build_parser().parse_args(
+        ["--dry-run", "sbom", "--image", "bazzite-deck", "--chunked-image", "localhost/custom-chunked",
+         "--version-tag", "45.20261018", "--syft-cmd", "/opt/syft"]
+    )
+    assert b.cmd_sbom(args) == 0
+    assert "buildah unshare" in caplog.text
+    assert "bash localhost/custom-chunked /opt/syft bazzite-deck-45.20261018 " in caplog.text
+    assert "export" not in caplog.text
+    assert json.loads(capsys.readouterr().out)["sbom"].endswith("/sbom.json")
 
 
 def test_test_dry_run_invokes_dgoss(caplog):
@@ -476,11 +551,11 @@ def test_sbom_attach_dry_run_emits_placeholder_digest(capsys):
 def test_resolve_bakes_image_vendor_into_build_args(capsys):
     """CI passes the lowercased repo owner, so fork builds identify as the fork."""
     args = b.build_parser().parse_args([
-        "resolve", "--image", "bazzite", "--upstream-tag", f"{FEDORA}.20260820.0",
-        "--skip-registry", "--image-vendor", "tedohayer",
+        "resolve", "--image", "bazzite", "--version", f"{FEDORA}.20260820",
+        "--image-vendor", "ublue-os",
     ])
     assert b.cmd_resolve(args) == 0
-    assert json.loads(capsys.readouterr().out)["build_args"]["IMAGE_VENDOR"] == "tedohayer"
+    assert json.loads(capsys.readouterr().out)["build_args"]["IMAGE_VENDOR"] == "ublue-os"
 
 
 def test_sbom_attach_passes_relative_path_from_sbom_dir(caplog):
@@ -495,3 +570,26 @@ def test_sbom_attach_passes_relative_path_from_sbom_dir(caplog):
     assert line.startswith("+ (cd /tmp/sbom-xyz && oras attach")
     assert line.endswith(" sbom.json)")
     assert "/tmp/sbom-xyz/sbom.json" not in line
+
+
+def test_sbom_packages_keeps_rpms_and_prefers_epoch_version():
+    sbom = {"artifacts": [
+        {"type": "rpm", "name": "mesa-filesystem", "version": "26.2.4-1.fc45"},
+        {"type": "rpm", "name": "mesa-filesystem", "version": "1:26.2.4-1.fc45"},
+        {"type": "rpm", "name": "mesa-filesystem", "version": "26.2.4-1.fc45"},
+        {"type": "python", "name": "requests", "version": "2.32.0"},
+        {"type": "rpm", "name": "kernel-core"},
+    ]}
+    assert b.sbom_packages(sbom) == {"mesa-filesystem": "1:26.2.4-1.fc45"}
+
+
+def test_cmd_packages_writes_versioned_file_next_to_sbom(tmp_path, capsys):
+    sbom = tmp_path / "sbom.json"
+    sbom.write_text(json.dumps({"artifacts": [{"type": "rpm", "name": "steam", "version": "1.0.0.87-5.fc45"}]}))
+    version = f"unstable-{FEDORA}.20261021.3"
+    assert b.main(["packages", "--image", "bazzite-deck", "--sbom", str(sbom), "--version", version]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out == {"packages": str(tmp_path / "packages-bazzite-deck.json")}
+    assert json.loads((tmp_path / "packages-bazzite-deck.json").read_text()) == {
+        "image": "bazzite-deck", "version": version, "packages": {"steam": "1.0.0.87-5.fc45"},
+    }

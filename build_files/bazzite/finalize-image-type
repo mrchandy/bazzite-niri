@@ -125,40 +125,6 @@ if [[ "${BASE_IMAGE_NAME}" == "silverblue" ]]; then
     rm -r /tmp/bazzite-schema-test
 fi
 
-# -- Disable rpm-ostree stage --
-echo "==> Disabling rpm-ostree stage..."
-sed -i \
-    's/stage/none/g' \
-    /etc/rpm-ostreed.conf
-
-# -- Disable repositories --
-echo "==> Disabling repositories..."
-dnf5 config-manager disable \
-    tailscale-stable \
-    copr:copr.fedorainfracloud.org:ublue-os:akmods \
-    'fedora-multimedia*' \
-    fedora-cisco-openh264 \
-    terra \
-    terra-extras \
-    terra-mesa \
-    terra-source
-
-# -- Disable Copr repositories --
-echo "==> Disabling Copr repositories..."
-for copr in \
-    ublue-os/bazzite \
-    ublue-os/bazzite-multilib \
-    ublue-os/staging \
-    ublue-os/packages \
-    ycollet/audinux \
-    che/nerd-fonts \
-    yalter/niri-git \
-    scottames/ghostty \
-    avengemedia/danklinux \
-    avengemedia/dms-git; do
-    dnf5 -y copr disable "${copr}"
-done
-
 # -- Patch setroubleshoot path --
 echo "==> Patching setroubleshoot path..."
 sed -i \
@@ -190,7 +156,7 @@ ln -s /usr/bin/true /usr/bin/pulseaudio
 # -- Configure Flatpak --
 echo "==> Configuring Flatpak..."
 mkdir -p /etc/flatpak/remotes.d
-curl --retry 3 -Lo /etc/flatpak/remotes.d/flathub.flatpakrepo \
+curl --fail --retry 3 --retry-all-errors -Lo /etc/flatpak/remotes.d/flathub.flatpakrepo \
     https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # -- Configure systemd services --
@@ -234,10 +200,6 @@ echo "==> Downloading waydroid GPU selector..."
     "https://raw.githubusercontent.com/ublue-os/waydroid-scripts/main/waydroid-choose-gpu.sh" \
     -Lo /usr/bin/waydroid-choose-gpu
 chmod +x /usr/bin/waydroid-choose-gpu
-
-# -- Configure DNF fallback --
-echo "==> Configuring DNF fallback..."
-dnf5 config-manager setopt skip_if_unavailable=1
 
 # -- Download distrobox configs --
 echo "==> Downloading distrobox configs..."

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 #
+# Initialize
+#
 # Setup Copr repositories, install Terra packages, configure Tailscale,
 # and apply repository priorities and exclusions for Bazzite.
 #
 set -xeuo pipefail
 
-echo "::group::Setup Copr repos"
+echo "::group::Initialize"
 trap 'echo "::endgroup::"' EXIT
 
 # -- Cache configuration --
@@ -36,6 +38,10 @@ do
         setopt "copr:copr.fedorainfracloud.org:${copr////:}.priority=98"
 done
 
+# Disable third party copr repos
+dnf5 -y copr disable "ycollet/audinux"
+dnf5 -y copr disable "che/nerd-fonts"
+
 # -- Install Terra-release packages --
 # Add the Terra repository and install its release packages.
 echo "==> Installing Terra release packages..."
@@ -43,8 +49,11 @@ echo "==> Installing Terra release packages..."
 # shellcheck disable=SC2016
 dnf5 -y install \
     --nogpgcheck \
+    --setopt=terra.skip_if_unavailable=False \
     --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
     terra-release{,-extras,-mesa}
+
+dnf5 config-manager setopt '*terra*.skip_if_unavailable=False'
 
 # -- Add Tailscale repository --
 echo "==> Adding Tailscale repository..."
@@ -63,9 +72,7 @@ echo "==> Configuring repository priorities and exclusions..."
 
 dnf5 -y config-manager \
     setopt "*terra*".priority=1 \
-           "*terra*.exclude=nerd-fonts scx-tools scx-scheds"
-
-dnf5 -y config-manager disable terra-mesa
+           "*terra*.exclude=nerd-fonts"
 
 dnf5 -y config-manager setopt "*bazzite*".priority=2
 

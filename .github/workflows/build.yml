@@ -106,6 +106,10 @@ jobs:
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
+        with:
+          android: false
+          large-packages: false
+          docker-images: false
 
       # Moved up from its old spot (after "Define base variables") --
       # build.py has to exist on disk before the next step can call it.
@@ -298,12 +302,31 @@ jobs:
             --image "${IMAGE}" \
             --chunked-image localhost/chunked-img \
             --version-tag "${VERSION_TAG}" \
-            --container-mgr podman \
             --syft-cmd "${SYFT_CMD}" \
             > sbom.json
           sbom="$(jq -er .sbom sbom.json)"
           du -sh "${sbom}"
           echo "SBOM=${sbom}" >> "$GITHUB_OUTPUT"
+
+      - name: Write package versions
+        if: github.event_name != 'pull_request'
+        id: packages
+        env:
+          IMAGE: ${{ matrix.image }}
+          SBOM: ${{ steps.generate-sbom.outputs.SBOM }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          ./build.py packages --image "${IMAGE}" --sbom "${SBOM}" --version "${VERSION}" > packages.json
+          echo "path=$(jq -er .packages packages.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package versions
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: packages-${{ matrix.image }}
+          path: ${{ steps.packages.outputs.path }}
+          retention-days: 7
+          overwrite: true
 
       - name: Install dgoss
         run: |
@@ -391,6 +414,21 @@ jobs:
           subject-name: ${{ steps.resolve.outputs.output_image }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+      - name: Final image size summary
+        if: always() && steps.rechunk.outcome == 'success'
+        env:
+          IMAGE_NAME: ${{ matrix.image }}
+          IMAGE_REF: ${{ steps.rechunk.outputs.ref }}
+        run: |
+          image_size=$(podman image inspect --format '{{.Size}}' "${IMAGE_REF#containers-storage:}")
+          image_size_human=$(numfmt --to=iec-i --suffix=B "$image_size")
+          {
+            echo "### Final image size (uncompressed)"
+            echo '```'
+            echo "${IMAGE_NAME}: ${image_size_human} (${image_size} bytes)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Disk usage summary
         if: always()

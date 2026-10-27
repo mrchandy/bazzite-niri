@@ -31,7 +31,6 @@ import dataclasses
 import json
 import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -58,7 +57,7 @@ IMAGE_VENDOR_DEFAULT = "ublue-os"
 DEFAULTS = {
     "fedora_version": 45,
     "kernel_flavor": "ogc",
-    "kernel_version": "7.2.9-ogc6.1.fc45",
+    "kernel_version": "7.2.11-ogc4.1.fc45",
     "base_image_flavor": "main",
     "arch": "x86_64",
 }
@@ -71,7 +70,7 @@ IMAGES: dict[str, dict] = {
         "base_image_name": "base",
         "container_target": "bazzite",
         "nvidia_base": "bazzite",
-        "nvidia_flavor": "nvidia-lts",
+        "nvidia_flavor": "nvidia-open",
         "install_nvidia": False,
     },
 }
@@ -327,40 +326,37 @@ def build_args(
         "VERSION_TAG": version_tag,
         "VERSION_PRETTY": version_pretty,
         "ARCH": variant.arch,
+        "BUILD_DECK": str("deck" in variant.image).upper(),
+        "BUILD_NVIDIA": str("nvidia" in variant.image).upper(),
     }
 
 
-def resolve_source_version(
+def resolve_pretty_version(
     *,
     ref_name: str,
-    upstream_tag: str,
+    version: str,
     sha_short: str,
     fedora_version: int,
     pr_number: str | None = None,
-) -> tuple[str, str]:
-    """VERSION_TAG / VERSION_PRETTY build args, baked into the image's
-    /usr/lib/os-release. `upstream_tag` is the base Fedora image's own
-    version label with any trailing ".0" stripped, e.g. skopeo inspect's
-    Labels["org.opencontainers.image.version"].
+) -> str:
     """
+    VERSION_PRETTY build args from our resolved release tag. 
+    The registry tag carries the branch prefix and only has a point-release suffix on collisions.
+    """
+    release = version.removeprefix("unstable-").removeprefix("testing-")
+
+    if not release.startswith(f"{fedora_version}."):
+        raise ValueError(f"version tag {version} does not match fedora_version {fedora_version}")
+
     if pr_number:
-        version = f"pr-{fedora_version}-{pr_number}"
-        pretty = f"PR ({pr_number}, {upstream_tag})"
+        pretty = f"PR ({pr_number}, F{release}, #{sha_short})"
     elif ref_name == "unstable":
-        version = f"unstable-{upstream_tag}"
-        pretty = f"Unstable (F{upstream_tag}, #{sha_short})"
+        pretty = f"Unstable (F{release}, #{sha_short})"
     elif ref_name == "testing":
-        version = f"testing-{upstream_tag}"
-        pretty = f"Testing (F{upstream_tag}, #{sha_short})"
+        pretty = f"Testing (F{release}, #{sha_short})"
     else:
-        version = upstream_tag
-        pretty = f"Stable (F{upstream_tag})"
-    return version, pretty
-
-
-def strip_trailing_zero(upstream_tag: str) -> str:
-    """Remove a trailing ".0" so it doesn't collide with our own point releases."""
-    return re.sub(r"\.\d$", "", upstream_tag)
+        pretty = f"Stable (F{release})"
+    return pretty
 
 
 def release_version(*, ref_name: str, fedora_version: int, today: datetime | None = None) -> str:
@@ -524,42 +520,6 @@ def cmd_resolve(args: argparse.Namespace) -> int:
     sha = args.sha or "deadbeef"
     sha_short = sha[:7]
 
-    upstream_tag = args.upstream_tag
-    if upstream_tag is None:
-        with group(f"Inspecting {variant.base_image}"):
-            result = run(
-                ["skopeo", "inspect", f"docker://{variant.base_image}"],
-                capture=True,
-                dry_run=args.dry_run,
-            )
-            if args.dry_run:
-                upstream_tag = f"{variant.fedora_version}.0"
-            else:
-                data = json.loads(result.stdout)
-                raw = data.get("Labels", {}).get("org.opencontainers.image.version")
-                if not raw or raw == "null":
-                    log.error("inspected image version must not be empty or null")
-                    return 1
-                upstream_tag = raw
-    upstream_tag = strip_trailing_zero(upstream_tag)
-
-    source_version, source_pretty = resolve_source_version(
-        ref_name=ref_name,
-        upstream_tag=upstream_tag,
-        sha_short=sha_short,
-        fedora_version=variant.fedora_version,
-        pr_number=args.pr_number,
-    )
-
-    args_out = build_args(
-        variant,
-        image_vendor=args.image_vendor,
-        image_branch=ref_name,
-        sha_head_short=sha_short,
-        version_tag=source_version,
-        version_pretty=source_pretty,
-    )
-
     output_image = f"{args.push_registry}/{variant.image}"
     if args.version:
         # Precomputed by `version` for the whole run (CI). Guards against it
@@ -574,6 +534,22 @@ def cmd_resolve(args: argparse.Namespace) -> int:
         if not args.dry_run and not args.skip_registry:
             with group(f"Checking existing tags for {output_image}"):
                 version = dedup_version(version, list_tags(output_image))
+
+    version_pretty = resolve_pretty_version(
+        ref_name=ref_name,
+        version=version,
+        sha_short=sha_short,
+        fedora_version=variant.fedora_version,
+        pr_number=args.pr_number,
+    )
+    args_out = build_args(
+        variant,
+        image_vendor=args.image_vendor,
+        image_branch=ref_name,
+        sha_head_short=sha_short,
+        version_tag=version,
+        version_pretty=version_pretty,
+    )
 
     tags = alias_tags(ref_name=ref_name, version=version, fedora_version=variant.fedora_version)
     labels = labels_for(variant, version=version, sha=sha, kernel_evr=args.kernel_evr or variant.kernel_version)
@@ -600,7 +576,7 @@ def cmd_resolve(args: argparse.Namespace) -> int:
 def cmd_build(args: argparse.Namespace) -> int:
     """Build the image with podman/buildah.
 
-    Local dev builds skip the registry entirely -- no upstream tag lookup,
+    Local dev builds skip the registry entirely -- no release tag lookup,
     no version dedup -- since a contributor iterating on a package list
     doesn't care whether "44.20260820" collides with a published tag. CI
     passes --resolved-json to reuse the build args/target that `resolve`
@@ -622,7 +598,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         )
 
     tag = args.tag or f"localhost/{args.image}:build"
-    cmd = [args.container_mgr, "build", "-f", "Containerfile", "--target", target]
+    cmd = [args.container_mgr, "build", "-f", "Containerfile"]
     for key, value in args_dict.items():
         cmd.append(f"--build-arg={key}={value}")
     if args.secret:
@@ -714,7 +690,7 @@ def cmd_rechunk(args: argparse.Namespace) -> int:
                     "--volume", f"{rechunk_dir}:/run/out:Z",
                     chunkah_ref,
                     "build",
-                    "--verbose", "--compressed",
+                    "--verbose",
                     "--max-layers", str(args.max_layers),
                     "--prune", "/sysroot/",
                     *labels,
@@ -738,38 +714,63 @@ def cmd_rechunk(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_sbom(args: argparse.Namespace) -> int:
-    """Export the chunked image's rootfs and run syft over it to produce an SBOM."""
-    oci_dir = Path(tempfile.mkdtemp(prefix="image-oci-", dir=scratch_dir()))
-    rootfs = oci_dir / "rootfs"
-    rootfs.mkdir(parents=True)
-    try:
-        run(
-            [args.container_mgr, "container", "create", "--replace", "--name", args.image, args.chunked_image],
-            dry_run=args.dry_run,
-        )
-        export_cmd = [args.container_mgr, "export", args.image]
-        tar_cmd = ["tar", "-C", str(rootfs), "--no-same-owner", "-xf", "-"]
-        log.info("+ %s | %s", " ".join(export_cmd), " ".join(tar_cmd))
-        if not args.dry_run:
-            export = subprocess.Popen(export_cmd, stdout=subprocess.PIPE)
-            subprocess.run(tar_cmd, stdin=export.stdout, check=True)
-            export.stdout.close()
-            export.wait()
-        run([args.container_mgr, "container", "rm", args.image], dry_run=args.dry_run, check=False)
+#: Shell run under `buildah unshare` that mounts an image's rootfs in place
+#: (via a throwaway working container) and runs syft over it. $1 is the
+#: image, $2 the syft binary, $3 the SBOM source name, $4 the output path.
+SYFT_ON_MOUNT = """
+container=$(buildah from --pull=never "$1")
+trap 'buildah rm "$container" >/dev/null' EXIT
+mnt=$(buildah mount "$container")
+"$2" --source-name "$3" "dir:$mnt" -o "syft-json=$4"
+"""
 
-        sbom_path = Path(tempfile.mkdtemp(prefix="sbom-")) / "sbom.json"
-        source_name = f"{args.image}-{args.version_tag}"
-        env = {"SYFT_PARALLELISM": str((os.cpu_count() or 1) * 2)}
-        run(
-            [args.syft_cmd, "--source-name", source_name, str(rootfs), "-o", f"syft-json={sbom_path}"],
-            dry_run=args.dry_run,
-            env=env,
-        )
-        print(json.dumps({"sbom": str(sbom_path)}))
-        return 0
-    finally:
-        shutil.rmtree(oci_dir, ignore_errors=True)
+
+def cmd_sbom(args: argparse.Namespace) -> int:
+    """Run syft over the chunked image's rootfs to produce an SBOM.
+
+    The rootfs is scanned through a buildah mount rather than a `podman
+    export | tar -x` copy, which wrote the whole image back to disk first
+    (minutes on CI).
+    """
+    sbom_path = Path(tempfile.mkdtemp(prefix="sbom-")) / "sbom.json"
+    source_name = f"{args.image}-{args.version_tag}"
+    env = {"SYFT_PARALLELISM": str((os.cpu_count() or 1) * 2)}
+    run(
+        [
+            "buildah", "unshare", "bash", "-euo", "pipefail", "-c", SYFT_ON_MOUNT,
+            "bash", args.chunked_image, args.syft_cmd, source_name, str(sbom_path),
+        ],
+        dry_run=args.dry_run,
+        env=env,
+    )
+    print(json.dumps({"sbom": str(sbom_path)}))
+    return 0
+
+
+def sbom_packages(sbom: dict) -> dict[str, str]:
+    """RPM name -> version from a syft-json SBOM, preferring an epoch-qualified version."""
+    packages = {}
+    for artifact in sbom.get("artifacts", []):
+        if artifact.get("type") != "rpm":
+            continue
+        name = artifact.get("name")
+        version = artifact.get("version")
+        if name and version:
+            if name not in packages or (":" in version and ":" not in packages[name]):
+                packages[name] = version
+    return packages
+
+
+def cmd_packages(args: argparse.Namespace) -> int:
+    """Write the image's RPM versions next to its SBOM, for changelog.py."""
+    sbom_path = Path(args.sbom)
+    packages_path = sbom_path.parent / f"packages-{args.image}.json"
+    packages = sbom_packages(json.loads(sbom_path.read_bytes()))
+    packages_path.write_text(
+        json.dumps({"image": args.image, "version": args.version, "packages": packages}, sort_keys=True)
+    )
+    print(json.dumps({"packages": str(packages_path)}))
+    return 0
 
 
 def cmd_test(args: argparse.Namespace) -> int:
@@ -902,7 +903,7 @@ def cmd_shell(args: argparse.Namespace) -> int:
 
 
 def scratch_dir() -> str | None:
-    """Where to put multi-GiB scratch output (chunked OCI dirs, exported rootfs).
+    """Where to put multi-GiB scratch output (chunked OCI dirs).
 
     On Actions runners /tmp sits on the small root disk -- the largest images
     fail chunkah with "Disk quota exceeded" there -- so use $RUNNER_TEMP when
@@ -948,7 +949,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_resolve.add_argument("--pr-number", default=os.environ.get("PR_NUMBER"))
     p_resolve.add_argument("--image-vendor", default=IMAGE_VENDOR_DEFAULT)
     p_resolve.add_argument("--push-registry", default=PULL_REGISTRY)
-    p_resolve.add_argument("--upstream-tag", default=None, help="skip the skopeo inspect and use this instead")
     p_resolve.add_argument("--kernel-evr", default=None, help="skip the in-image rpm query and use this instead")
     p_resolve.add_argument("--skip-registry", action="store_true", help="skip point-release dedup against the registry")
     p_resolve.add_argument("--version", default=None, help="use this release version (from `version`) instead of resolving one")
@@ -989,9 +989,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_sbom.add_argument("--image", default=DEFAULT_IMAGE, choices=sorted(IMAGES))
     p_sbom.add_argument("--chunked-image", default="localhost/chunked-img")
     p_sbom.add_argument("--version-tag", default="dev")
-    p_sbom.add_argument("--container-mgr", default=None)
     p_sbom.add_argument("--syft-cmd", default="syft")
     p_sbom.set_defaults(func=cmd_sbom)
+
+    p_packages = sub.add_parser("packages", help="write an image's RPM versions from its SBOM, for release notes")
+    p_packages.add_argument("--image", required=True, choices=sorted(IMAGES))
+    p_packages.add_argument("--sbom", required=True)
+    p_packages.add_argument("--version", required=True)
+    p_packages.set_defaults(func=cmd_packages)
 
     p_test = sub.add_parser("test", help="run the goss test suite against an image ref")
     p_test.add_argument("--ref", required=True)

@@ -11,11 +11,40 @@ trap 'echo "::endgroup::"' EXIT
 # Tell DNF5 not to keep downloaded package cache after installation.
 dnf5 config-manager setopt keepcache=0
 
-# Remove stale temporary and cache directories, then recreate /var/tmp.
-rm -rf /tmp/* || true
-find /var/* -maxdepth 0 -type d \! -name cache -exec rm -fr {} \;
-mkdir -p /var/tmp
-chmod -R 1777 /var/tmp
+# -- Restore DNF fallback after all package transactions --
+echo "==> Restoring DNF fallback..."
+dnf5 config-manager unsetopt '*terra*.skip_if_unavailable'
+dnf5 config-manager setopt skip_if_unavailable=1
+
+# -- Disable rpm-ostree stage --
+echo "==> Disabling rpm-ostree stage..."
+sed -i \
+    's/stage/none/g' \
+    /etc/rpm-ostreed.conf
+
+# -- Disable repositories --
+echo "==> Disabling repositories..."
+dnf5 config-manager disable \
+    tailscale-stable \
+    copr:copr.fedorainfracloud.org:ublue-os:akmods \
+    'fedora-multimedia*' \
+    fedora-cisco-openh264 \
+    terra \
+    terra-extras \
+    terra-mesa \
+    terra-source
+
+# -- Disable Copr repositories --
+echo "==> Disabling Copr repositories..."
+for copr in \
+    ublue-os/bazzite \
+    ublue-os/bazzite-multilib \
+    ublue-os/staging \
+    ublue-os/packages \
+    ycollet/audinux \
+    che/nerd-fonts; do
+    dnf5 -y copr disable "${copr}"
+done
 
 # Move user/group entries from /etc to /usr/lib so they persist across
 # chroots and container mounts.
@@ -68,6 +97,7 @@ rm -rf \
     /etc/subuid- \
     /etc/subgid-
 
+# Chunkah
 # See: https://github.com/coreos/chunkah#customizing-the-layers
 RPM_OSTREE_TMPFILES=/usr/lib/rpm-ostree/tmpfiles.d
 setfattr -n user.component -v "rpm-ostree-tmpfiles.d" "${RPM_OSTREE_TMPFILES}"
@@ -85,9 +115,52 @@ setfattr -n user.update-interval -v "quarterly" "/etc/distrobox/incus.ini"
 setfattr -n user.component -v "ublue-os" "/usr/share/bash-prexec"
 setfattr -n user.update-interval -v "quarterly" "/usr/share/bash-prexec"
 
+UBLUE_OS_CONFIG=(
+    /etc/flatpak/remotes.d/flathub.flatpakrepo
+    /usr/lib/dracut/dracut.conf.d/10-compression.conf
+    /usr/lib/systemd/system/bootc-update-ca-trust.service
+    /usr/lib/systemd/system/bootc-update-crypto-policies.service
+    /usr/lib/systemd/system/flatpak-add-fedora-repos.service
+    /usr/lib/systemd/system-generators/coreos-sulogin-force-generator
+    /usr/lib/tmpfiles.d/coredump.conf
+    /usr/share/dnf/plugins/copr.vendor.conf
+)
+for UBLUE_OS_CONFIG_FILE in "${UBLUE_OS_CONFIG[@]}"; do
+    if [[ -f "${UBLUE_OS_CONFIG_FILE}" ]]; then
+        setfattr -n user.component -v "ublue-os-config" "${UBLUE_OS_CONFIG_FILE}"
+        setfattr -n user.update-interval -v "yearly" "${UBLUE_OS_CONFIG_FILE}"
+    fi
+done
+
 BAZZITE_CONFIG=(/usr/libexec/bazzite-* /usr/libexec/hwsupport /usr/share/bazzite-cli)
 setfattr -n user.component -v "bazzite-init" "${BAZZITE_CONFIG[@]}"
 setfattr -n user.update-interval -v "monthly" "${BAZZITE_CONFIG[@]}"
+
+for BAZZITE_HELPER in /usr/bin/bazzite-* /usr/bin/cec-control /usr/bin/startplasma-steamos-oneshot; do
+    if [[ -f "${BAZZITE_HELPER}" ]]; then
+        setfattr -n user.component -v "bazzite-init" "${BAZZITE_HELPER}"
+        setfattr -n user.update-interval -v "monthly" "${BAZZITE_HELPER}"
+    fi
+done
+
+BAZZITE_JUST=/usr/share/ublue-os/just
+setfattr -n user.component -v "bazzite-just" "${BAZZITE_JUST}"
+setfattr -n user.update-interval -v "quarterly" "${BAZZITE_JUST}"
+
+BAZZITE_YAFTI=/usr/share/yafti
+setfattr -n user.component -v "bazzite-yafti" "${BAZZITE_YAFTI}"
+setfattr -n user.update-interval -v "quarterly" "${BAZZITE_YAFTI}"
+
+BAZZITE_BAZAAR=/usr/share/ublue-os/bazaar
+setfattr -n user.component -v "bazzite-bazaar" "${BAZZITE_BAZAAR}"
+setfattr -n user.update-interval -v "quarterly" "${BAZZITE_BAZAAR}"
+
+for GNOME_EXTENSION in /usr/share/gnome-shell/extensions/*; do
+    if [[ -d "${GNOME_EXTENSION}" ]]; then
+        setfattr -n user.component -v "gnome-extension-${GNOME_EXTENSION##*/}" "${GNOME_EXTENSION}"
+        setfattr -n user.update-interval -v "weekly" "${GNOME_EXTENSION}"
+    fi
+done
 
 for WALLPAPERS in /usr/share/wallpapers /usr/share/backgrounds /usr/share/gnome-background-properties; do
     if [[ -d "${WALLPAPERS}" ]]; then
@@ -104,10 +177,28 @@ BAZZITE_ASSETS=(
     /usr/share/pixmaps/system-logo-white.png
     /usr/share/plasma/avatars
     /usr/share/plymouth/themes/spinner/watermark.png
-    /usr/share/ublue-os/bazaar
+    /usr/share/ublue-os/bazaar/*.jxl
+    /usr/share/ublue-os/bazzite/*.webm
 )
 setfattr -n user.component -v "bazzite-assets" "${BAZZITE_ASSETS[@]}"
-setfattr -n user.update-interval -v "quarterly" "${BAZZITE_ASSETS[@]}"
+setfattr -n user.update-interval -v "yearly" "${BAZZITE_ASSETS[@]}"
+WAYDROID_ASSETS=/usr/share/applications/Waydroid
+if [[ -d "${WAYDROID_ASSETS}" ]]; then
+    setfattr -n user.component -v "bazzite-assets" "${WAYDROID_ASSETS}"
+    setfattr -n user.update-interval -v "yearly" "${WAYDROID_ASSETS}"
+fi
+
+for AUDIO_PROFILES in /usr/share/{pipewire,wireplumber}/hardware-profiles; do
+    if [[ -d "${AUDIO_PROFILES}" ]]; then
+        setfattr -n user.component -v "bazzite-audio-config" "${AUDIO_PROFILES}"
+        setfattr -n user.update-interval -v "quarterly" "${AUDIO_PROFILES}"
+        # Impulse responses are large and rarely change alongside profile tuning.
+        find "${AUDIO_PROFILES}" -type f -name '*.wav' \
+            -exec setfattr -n user.component -v "bazzite-audio-config" {} + \
+            -exec setfattr -n user.update-interval -v "quarterly" {} +
+    fi
+done
+
 find /usr/share/icons/hicolor -type f \
     \( -name 'bazzite-logo*' -o -name 'distributor-logo*' -o -name 'framework.svg' \) \
     -exec setfattr -n user.component -v "bazzite-icons" {} + \
@@ -151,6 +242,5 @@ if [[ -f "${STEAM_BOOTSTRAP}" ]]; then
     setfattr -n user.update-interval -v "yearly" "${STEAM_BOOTSTRAP}"
 fi
 
-# Normalize filesystem timestamps without affecting chunkah's layer plan.
-# See: https://github.com/coreos/chunkah/issues/160
-find /usr /etc /opt -newermt '1970-01-01T00:00:00Z' -exec touch -h -a -m -d '1970-01-01T00:00:00Z' {} +
+# Catch files changed since the last stage's reset (initramfs, image-info, overrides).
+/ctx/reset-mtimes
