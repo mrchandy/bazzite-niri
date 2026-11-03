@@ -71,12 +71,14 @@ From previous `{target}` version `{prev}` there have been the following changes.
 | **OpenGamepadUI** | {pkgrel:opengamepadui} |
 | **PowerStation** | {pkgrel:powerstation} |
 | **SteamOS-Manager** | {pkgrel:steamos-manager-powerstation} |
+| **sched_ext Schedulers** | {pkgrel:scx-scheds} |
 | **UMU Launcher** | {pkgrel:umu-launcher} |
 | **Bazaar** | {pkgrel:bazaar} |
 | **Niri** | {pkgrel:niri} |
 | **DMS** | {pkgrel:dms} |
 | **Quickshell** | {pkgrel:quickshell-git} |
 | **Distrobox** | {pkgrel:distrobox} |
+| **UUPD** | {pkgrel:uupd} |
 | **Waydroid** | {pkgrel:waydroid} |
 
 {changes}

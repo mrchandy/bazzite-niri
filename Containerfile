@@ -30,6 +30,7 @@
 # If you choose to fork this repo, see the
 # build_files folder for relevant build
 # scripts.
+#
 
 ARG BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-kinoite}"
 ARG FEDORA_VERSION="${FEDORA_VERSION:-45}"
@@ -47,7 +48,7 @@ FROM ${BASE_IMAGE} AS base-image
 FROM ghcr.io/ublue-os/akmods:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods
 FROM ghcr.io/ublue-os/akmods-extra:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-extra
 FROM ghcr.io/ublue-os/akmods-${NVIDIA_FLAVOR}:${KERNEL_FLAVOR}-${FEDORA_VERSION}-${KERNEL_VERSION} AS akmods-nvidia
-FROM ghcr.io/ublue-os/brew:latest@sha256:c201bc801e4828849e8e36c4adcb5c0f38d35ac3ff9546a0ecab0fd2beabf51f AS brew
+FROM ghcr.io/ublue-os/brew:latest@sha256:974ce5e4d6d5fceb6151910957515a42c0eefced4ea386fdfadb0fbad84499a5 AS brew
 
 FROM scratch AS ctx
 COPY build_files /
@@ -65,6 +66,7 @@ ARG FEDORA_VERSION="${FEDORA_VERSION:-45}"
 ARG SHA_HEAD_SHORT="${SHA_HEAD_SHORT}"
 ARG VERSION_TAG="${VERSION_TAG}"
 ARG VERSION_PRETTY="${VERSION_PRETTY}"
+ARG KERNEL_FLAVOR
 ARG NVIDIA_FLAVOR
 ARG BUILD_DECK
 ARG BUILD_NVIDIA
@@ -84,16 +86,16 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=bind,from=system_files,source=/,target=/tmp/system_files \
     --mount=type=tmpfs,dst=/tmp \
     --mount=type=secret,id=GITHUB_TOKEN \
-    /ctx/build
+    /ctx/build.sh
 
 RUN --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
-    /ctx/image-info \
-    && /ctx/build-initramfs \
-    && /ctx/finalize \
-    && /ctx/cleanup
+    /ctx/image-info.sh \
+    && /ctx/build-initramfs.sh \
+    && /ctx/finalize.sh \
+    && /ctx/cleanup.sh
 
 RUN --mount=type=tmpfs,target=/run \
     --network=none \
