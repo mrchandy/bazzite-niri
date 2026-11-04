@@ -34,19 +34,19 @@ dnf -y install \
    qt6-qtimageformats \
    kf6-kimageformats
 
-dnf -y --enablerepo copr:copr.fedorainfracloud.org:avengemedia:danklinux install quickshell-git
+dnf -y --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dux-repo install quickshell-git
 # DMS suite
 dnf -y \
     --disablerepo "*" \
-    --enablerepo copr:copr.fedorainfracloud.org:avengemedia:dms-git \
-    --enablerepo copr:copr.fedorainfracloud.org:avengemedia:danklinux \
+    --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dms \
+    --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dux-repo \
     install --setopt=install_weak_deps=False --skip-broken \
     dms \
     dms-cli \
-    dms-greeter-git \
-    dgop \
-    danksearch \
-    dankcalendar-git \
+    dux-greeter \
+    dux-gop \
+    dux-search \
+    dux-calendar \
     matugen \
     cliphist
 
