@@ -55,6 +55,7 @@ Bazzite basiert auf [ublue-os/main](https://github.com/ublue-os/main) unter Verw
 - HDR und VRR standardmäßig verfügbar.
 - Volle Hardware-beschleunigte Codec-Unterstützung für H264-Dekodierung.
 - [xone](https://github.com/medusalix/xone)-Treiber für Xbox-Controller.
+- Verbesserte Unterstützung für Lenkräder mit mehreren zusätzlichen Treibern.
 - Volle Unterstützung für [DisplayLink](https://www.synaptics.com/products/displaylink-graphics).
 - Enthält Valves KDE-Designs von SteamOS.
 - [vkBasalt](https://github.com/DadSchoorse/vkBasalt), [MangoHud](https://github.com/flightlessmango/Mangohud) und [OBS VkCapture](https://github.com/nowrep/obs-vkcapture) standardmäßig installiert und verfügbar.
@@ -74,7 +75,7 @@ Bazzite basiert auf [ublue-os/main](https://github.com/ublue-os/main) unter Verw
 
 Standardvariante, verfügbar als `bazzite`, geeignet für Desktop-Computer.
 
-- Automatische Updates für das OS, Flatpaks und mehr – angetrieben von [uupd](https://github.com/ublue-os/uupd) und [topgrade](https://github.com/topgrade-rs/topgrade).
+- Automatische Updates für das OS, Flatpaks und mehr – angetrieben von [uupd](https://github.com/ublue-os/uupd).
 
 > [!IMPORTANT]
 > **ISOs können von unserer [Website](https://download.bazzite.gg) heruntergeladen werden, und eine hilfreiche Installationsanleitung findest du [hier](https://docs.bazzite.gg/General/Installation_Guide/) (Englisch).**
@@ -100,28 +101,21 @@ Diese Variante wurde für die Nutzung als Alternative zu SteamOS auf dem Steam D
 
 - Bootet direkt in den Spielmodus, passend zum Verhalten von SteamOS.
 - **Automatisches `bees` reduziert die Größe von Compatdata erheblich.**
-- **Die neueste Version von Mesa erzeugt kleinere Shader-Caches und benötigt diese nicht, um Ruckler zu verhindern.**
-- **Kann auch bei vollem Laufwerk gestartet werden.**
 - **Unterstützung für jede von Upstream Fedora unterstützte Sprache.**
 - **Nutzt Wayland auf dem Desktop mit [Unterstützung für Steam Input](https://github.com/Supreeeme/extest).**
-- Bietet portierte Versionen der meisten SteamOS-Pakete, einschließlich Treiber, Firmware-Updater und Lüftersteuerungen [aus dem evlaV-repository](https://gitlab.com/evlaV).
+- Bietet portierte Versionen der meisten SteamOS-Pakete, einschließlich Treiber, Firmware-Updater und Lüftersteuerungen.
 - Gepatchtes Mesa für präzise Framerate-Kontrolle von Gamescope.
 - Kommt standardmäßig mit Patches von [SteamOS BTRFS](https://gitlab.com/popsulfr/steamos-btrfs) für volle BTRFS-Unterstützung der SD-Karte.
 - Liefert eine portierte Kopie von [SDGyroDSU](https://github.com/kmicki/SteamDeckGyroDSU) mit, die standardmäßig aktiviert ist.
 - Option zur Installation von [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader), [EmuDeck](https://www.emudeck.com/), [RetroDECK](https://retrodeck.net/) und [ProtonUp-Qt](https://davidotek.github.io/protonup-qt/), neben zahlreichen anderen nützlichen Paketen während der Installation.
-- Ein benutzerdefiniertes Update-System ermöglicht es, das OS, Flatpaks und mehr direkt über die Game-Mode-UI zu aktualisieren, angetrieben von [uupd](https://github.com/ublue-os/uupd) und [topgrade](https://github.com/topgrade-rs/topgrade).
+- Ein benutzerdefiniertes Update-System ermöglicht es, das OS, Flatpaks und mehr direkt über die Game-Mode-UI zu aktualisieren, angetrieben von [uupd](https://github.com/ublue-os/uupd).
 - Integrierte Unterstützung für Windows-Dual-Boot dank der intakten Fedora-Installation von GRUB.
 - Update hat etwas kaputt gemacht? Rolle dank der Rollback-Funktion von `rpm-ostree` einfach zur vorherigen Bazzite-Version zurück. Du kannst sogar frühere Images beim Booten auswählen.
 - Steam und Lutris sind als Layered Packages auf dem Image vorinstalliert.
-- Verwendet standardmäßig ZRAM<sub><sup>(4GB)</sup></sub> mit dem LZ4-Komprimierungsalgorithmus.
-- [LAVD](https://crates.io/crates/scx_lavd) und [BORE](https://github.com/firelzrd/bore-scheduler) CPU-Scheduler für flüssiges und reaktionsschnelles Gameplay.
+- Unterstützung für [sched-ext](https://github.com/sched-ext/scx)-Scheduler ab Werk.
 - Kyber I/O-Scheduler, um I/O-Engpässe bei der Installation von Spielen oder während des `duperemove`-Hintergrundprozesses zu verhindern.
 - Wendest SteamOS' Kernel-Parameter an.
 - Farbkalibrierte Anzeigeprofile für matte und spiegelnde Steam Deck-Bildschirme enthalten.
-- Standardmäßig deaktivierte Power-User-Funktionen, einschließlich:
-  - Dienst für risikoarmes Undervolting des Steam Deck sowie von AMD Framework Laptops über [RyzenAdj](https://github.com/FlyGoat/RyzenAdj) und [Ryzen SMU](https://gitlab.com/leogx9r/ryzen_smu), siehe `ryzenadj.service` und `/etc/default/ryzenadj`.
-  - Integrierte Unterstützung für Display-Übertaktung. Füge zum Beispiel `CUSTOM_REFRESH_RATES=30-68` zu `/etc/environment` hinzu. Minimale und maximale Bildwiederholraten unterscheiden sich je nach Handheld!
-  - 32GB RAM-Mod für dein Steam Deck? Genieße die doppelte maximale VRAM-Menge, automatisch angewendet. <sup><sub>(Kannst du uns deine Lötkenntnisse mitteilen?)</sub></sup>
 - Steam Deck-Hardware-spezifische Dienste können durch Ausführen von `ujust disable-bios-updates` und `ujust disable-firmware-updates` im Terminal deaktiviert werden. Diese werden auf Nicht-Deck-Hardware und auf Decks mit DeckHD-Displays oder 32GB RAM-Mods automatisch deaktiviert.
 - Weitere Informationen zu den Bazzite Steam Deck Images findest du [hier](https://docs.bazzite.gg/Handheld_and_HTPC_edition/Steam_Gaming_Mode/).
 
@@ -264,7 +258,7 @@ Bazzite ist eine Gemeinschaftsleistung und würde ohne die Unterstützung aller 
 
 - [amelia.svg](https://bsky.app/profile/ameliasvg.bsky.social) – Für die Erstellung unseres Logos und des gesamten Brandings.
 - [SuperRiderTH](https://github.com/SuperRiderTH) – Für die Erstellung unseres Startvideos für den Steam Game Mode.
-- [evlaV](https://gitlab.com/evlaV) – Dafür, dass Valve's Code verfügbar gemacht wurde und dafür, dass er [diese Person](https://xkcd.com/2347/) ist.
+- [evlaV](https://gitlab.com/evlaV) *(Inzwischen im Ruhestand)* – Dafür, dass Valve's Code verfügbar gemacht wurde und dafür, dass er [diese Person](https://xkcd.com/2347/) ist.
 - [ChimeraOS](https://chimeraos.org/) – Für gamescope-session und für wertvolle Unterstützung auf unserem Weg.
 - [Jovian-NixOS](https://github.com/Jovian-Experiments) – Für die Unterstützung bei technischen Problemen und die Erstellung eines ähnlichen Projekts. Im Ernst, schau es dir an. Es ist unser Nix-basierter Cousin.
 - [sentry](https://copr.fedorainfracloud.org/coprs/sentry/) – Für die Unterstützung bei benötigten Kernel-Patches und die Erstellung des [kernel-fsync-Repos](https://copr.fedorainfracloud.org/coprs/sentry/kernel-fsync/).

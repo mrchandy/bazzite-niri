@@ -54,6 +54,7 @@ Bazzite 採用 [Fedora](https://fedoraproject.org/) 技術並透過 [ublue-os/ma
 - 完整支援 H264 解碼的硬體加速編解碼器。
 - 完整支援 AMD 的 ROCM OpenCL/HIP 執行環境 (run-times)。
 - 適用於 Xbox 控制器的 [xone](https://github.com/medusalix/xone) 驅動程式。
+- 透過多個額外驅動程式加強對方向盤的支援。
 - 完整支援 [DisplayLink](https://www.synaptics.com/products/displaylink-graphics)。
 - 包含來自 SteamOS 的 Valve KDE 主題。
 - 預設安裝並可使用 [LatencyFleX](https://github.com/ishitatsuyuki/LatencyFleX)、[vkBasalt](https://github.com/DadSchoorse/vkBasalt)、[MangoHud](https://github.com/flightlessmango/Mangohud) 與 [OBS VkCapture](https://github.com/nowrep/obs-vkcapture)。
@@ -80,7 +81,7 @@ Bazzite 採用 [Fedora](https://fedoraproject.org/) 技術並透過 [ublue-os/ma
 
 通用的 `bazzite` 版本，適合桌上型電腦使用。
 
-- 作業系統、Flatpak 等皆會自動更新 - 由 [uupd](https://github.com/ublue-os/uupd) 與 [topgrade](https://github.com/topgrade-rs/topgrade) 驅動。
+- 作業系統、Flatpak 等皆會自動更新 - 由 [uupd](https://github.com/ublue-os/uupd) 驅動。
 
 > [!IMPORTANT]
 > **ISO 映像檔可從我們的 [網站](https://download.bazzite.gg) 下載，並可在此找到實用的 [安裝指南](https://docs.bazzite.gg/General/Installation_Guide/)。**
@@ -105,30 +106,22 @@ rpm-ostree rebase ostree-unverified-registry:ghcr.io/ublue-os/bazzite-nvidia:sta
 
 - 依循 SteamOS 的行為，直接啟動進入遊戲模式 (Game mode)。
 - **自動執行 `duperemove` 大幅縮減 compatdata 的大小。**
-- **最新版本的 Mesa 建立較小的著色器快取 (shader caches)，且不需要它們即可防止卡頓。**
-- **即使磁碟已滿也能正常啟動。**
 - **支援上游 Fedora 所支援的所有語言。**
 - **在桌面上使用 Wayland，並 [支援 Steam 輸入](https://github.com/Supreeeme/extest)。**
-- 包含 [HHD](https://github.com/hhd-dev/hhd) 以在非 Valve 的掌上機上提供擴展的輸入支援。
-- 包含多數 SteamOS 套件的移植版本，包括驅動程式、韌體更新程式和風扇控制器，皆來自 [evlaV 儲存庫](https://gitlab.com/evlaV)。
+- 包含多數 SteamOS 套件的移植版本，包括驅動程式、韌體更新程式和風扇控制器。
 - 包含經過修補的 Mesa，以支援 Gamescope 的正確幀率控制。
 - 預設包含來自 [SteamOS BTRFS](https://gitlab.com/popsulfr/steamos-btrfs) 的修補程式，以完整支援 SD 卡的 BTRFS 格式。
 - 預裝並啟用 [SDGyroDSU](https://github.com/kmicki/SteamDeckGyroDSU) 的移植版本。
 - 安裝時可選擇安裝 [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader)、[EmuDeck](https://www.emudeck.com/)、[RetroDECK](https://retrodeck.net/) 與 [ProtonUp-Qt](https://davidotek.github.io/protonup-qt/) 等眾多實用套件。
-- 自訂的更新系統允許直接從遊戲模式介面更新作業系統、Flatpaks 等，由 [uupd](https://github.com/ublue-os/uupd) 與 [topgrade](https://github.com/topgrade-rs/topgrade) 驅動。
+- 自訂的更新系統允許直接從遊戲模式介面更新作業系統、Flatpaks 等，由 [uupd](https://github.com/ublue-os/uupd) 驅動。
 - 由於保留了 Fedora 的 GRUB 安裝，內建支援與 Windows 雙重開機 (Duel-boot)。
 - 更新後出問題了嗎？透過 `rpm-ostree` 的 rollback 功能，可輕鬆還原至 Bazzite 的前一個版本。您甚至可以在開機時選擇先前的映像檔。
 - Steam 與 Lutris 已作為分層套件 (layered packages) 預裝在映像檔中。
 - Discord 的 [Discover Overlay](https://github.com/trigg/Discover) 已預裝，若安裝了 Discord，將自動在遊戲模式與桌面上啟動。[點此查看官方文件](https://trigg.github.io/Discover/bazzite)。
-- 預設使用採用 LZ4 壓縮演算法的 ZRAM<sub><sup>(4GB)</sup></sub>。
-- 使用 [LAVD](https://crates.io/crates/scx_lavd) 與 [BORE](https://github.com/firelzrd/bore-scheduler) CPU 排程器，提供流暢且靈敏的遊戲體驗。
+- 開箱即用地支援 [sched-ext](https://github.com/sched-ext/scx) 排程器。
 - 使用 Kyber I/O 排程器以防止在安裝遊戲或背景執行 `duperemove` 時發生 I/O 資源匱乏 (starvation)。
 - 套用 SteamOS 的 kernel 參數。
 - 包含適用於霧面 (matte) 和反光 (reflective) Steam Deck 螢幕的色彩校正設定檔。
-- 預設停用的進階使用者功能，包含：
-    - 透過 [RyzenAdj](https://github.com/FlyGoat/RyzenAdj) 與 [Ryzen SMU](https://gitlab.com/leogx9r/ryzen_smu) 為 Steam Deck 及 AMD Framework 筆記型電腦提供低風險的降壓服務，請參閱 `ryzenadj.service` 與 `/etc/default/ryzenadj`。
-    - 內建螢幕超頻支援。例如，新增 `CUSTOM_REFRESH_RATES=30-68` 至 `/etc/environment`。最小與最大更新率因掌上機而異！
-    - 您有將 Steam Deck 改裝為 32GB RAM 嗎？享受雙倍的最大 VRAM 容量，將自動套用。<sup><sub>(可以分享一下您的焊接技巧嗎？)</sub></sup>
 - Steam Deck 硬體專屬服務可透過在終端機執行 `ujust disable-bios-updates` 和 `ujust disable-firmware-updates` 來停用。這些服務在非 Deck 硬體，以及擁有 DeckHD 螢幕或 32GB RAM 改裝的 Deck 上會自動停用。
 - 更多關於 Bazzite Steam Deck 映像檔的資訊可以在 [這裡](https://docs.bazzite.gg/Handheld_and_HTPC_edition/Steam_Gaming_Mode/) 找到。
 
@@ -144,14 +137,6 @@ rpm-ostree rebase ostree-unverified-registry:ghcr.io/ublue-os/bazzite-deck:stabl
 #### 其他的掌上型裝置
 
 請參考我們的 [掌上型裝置 Wiki](https://docs.bazzite.gg/Handheld_and_HTPC_edition/Handheld_Wiki/)，了解您特定掌上型裝置在 Steam 遊戲模式下所需的設定變更與 Decky Loader 外掛程式。
-
-**請務必閱讀 [hhd 文件](https://github.com/hhd-dev/hhd#after-install)，部分掌上機需要特定的設定變更/調整才能正常運作。**
-
-我們也提供了 `ujust` 指令來安裝各種無法在 CSS Loader 商店中找到的 [CSS Loader](https://docs.deckthemes.com/CSSLoader/Install/#linux-or-steam-deck) 主題。如果安裝了這些主題，它們將隨 Bazzite 自動更新。
-```bash
-# 安裝掌上機控制器主題 (https://github.com/victor-borges/handheld-controller-glyphs)
-ujust install-hhd-controller-glyph-theme
-```
 
 ### GNOME
 
@@ -279,7 +264,7 @@ Bazzite 是一項社群成果，沒有大家的支持就不會存在。以下是
 
 - [amelia.svg](https://bsky.app/profile/ameliasvg.bsky.social) - 感謝設計了我們的 Logo 與整體品牌形象。
 - [SuperRiderTH](https://github.com/SuperRiderTH) - 感謝製作了我們的 Steam 遊戲模式啟動影片。
-- [evlaV](https://gitlab.com/evlaV) - 感謝讓 Valve 的程式碼得以取用，並成為了 [這個人](https://xkcd.com/2347/)。
+- [evlaV](https://gitlab.com/evlaV) *（現已退休）* - 感謝讓 Valve 的程式碼得以取用，並成為了 [這個人](https://xkcd.com/2347/)。
 - [ChimeraOS](https://chimeraos.org/) - 感謝提供 gamescope-session 以及一路上寶貴的支援。
 - [Jovian-NixOS](https://github.com/Jovian-Experiments) - 感謝在技術問題上的支援並建立了一個類似的專案。說真的，去看看吧，那是我們的 Nix-based 表親。
 - [sentry](https://copr.fedorainfracloud.org/coprs/sentry/) - 感謝協助所需的 kernel 補丁並建立了我們現在使用的 [kernel-fsync repo](https://copr.fedorainfracloud.org/coprs/sentry/kernel-fsync/)。

@@ -38,7 +38,6 @@ rows:
           - dev.goats.xivlauncher
           - net.retrodeck.retrodeck
           - org.libretro.RetroArch
-          - page.kramo.Cartridges
           - com.github._0negal.Viper
           - info.cemu.Cemu
           - org.DolphinEmu.dolphin-emu
@@ -218,6 +217,7 @@ rows:
         list:
           - org.waywallen.waywallen
           - io.github.ilya_zlobintsev.LACT
+          - org.fcitx.Fcitx5
           - io.github.limo_app.limo
           - io.github.radiolamp.mangojuice
           - io.github.rfrench3.scopebuddy-gui
