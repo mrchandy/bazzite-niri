@@ -27,7 +27,7 @@ for copr in \
     ublue-os/packages \
     ycollet/audinux \
     che/nerd-fonts \
-    yalter/niri-git \
+    yalter/niri \
     scottames/ghostty \
     duxlabs/dux-repo \
     duxlabs/dms; \
