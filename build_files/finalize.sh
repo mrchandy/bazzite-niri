@@ -46,7 +46,7 @@ for copr in \
     yalter/niri-git \
     scottames/ghostty \
     duxlabs/dux-repo \
-    duxlabs/dms; do
+    duxlabs/dms-git; do
     dnf5 -y copr disable "${copr}"
 done
 

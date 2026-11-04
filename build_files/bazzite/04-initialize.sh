@@ -30,7 +30,7 @@ for copr in \
     yalter/niri-git \
     scottames/ghostty \
     duxlabs/dux-repo \
-    duxlabs/dms; \
+    duxlabs/dms-git; \
 do
     echo "    Enabling copr: ${copr}..."
     dnf5 -y copr enable "${copr}"

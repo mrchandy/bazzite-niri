@@ -38,15 +38,15 @@ dnf -y --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dux-repo install quic
 # DMS suite
 dnf -y \
     --disablerepo "*" \
-    --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dms \
+    --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dms-git \
     --enablerepo copr:copr.fedorainfracloud.org:duxlabs:dux-repo \
     install --setopt=install_weak_deps=False --skip-broken \
     dms \
     dms-cli \
-    dux-greeter \
+    dux-greeter-git \
     dux-gop \
     dux-search \
-    dux-calendar \
+    dux-calendar-git \
     matugen \
     cliphist
 
