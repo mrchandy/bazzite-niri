@@ -45,8 +45,8 @@ for copr in \
     che/nerd-fonts \
     yalter/niri-git \
     scottames/ghostty \
-    avengemedia/danklinux \
-    avengemedia/dms-git; do
+    duxlabs/dux-repo \
+    duxlabs/dms; do
     dnf5 -y copr disable "${copr}"
 done
 
