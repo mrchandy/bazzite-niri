@@ -29,8 +29,8 @@ for copr in \
     che/nerd-fonts \
     yalter/niri-git \
     scottames/ghostty \
-    avengemedia/danklinux \
-    avengemedia/dms-git; \
+    duxlabs/dux-repo \
+    duxlabs/dms; \
 do
     echo "    Enabling copr: ${copr}..."
     dnf5 -y copr enable "${copr}"
