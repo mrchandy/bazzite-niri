@@ -7,6 +7,11 @@
 #
 set -xeuo pipefail
 
+echo "==> Installing patched localsearch..."
+dnf5 -y swap \
+    --from-repo=copr:copr.fedorainfracloud.org:ublue-os:bazzite \
+    localsearch localsearch
+
 # -- Install GNOME packages --
 # Install GNOME desktop packages including extensions, themes, and tools.
 echo "==> Installing GNOME packages..."
@@ -18,7 +23,6 @@ dnf5 -y install \
     gnome-shell-extension-gsconnect \
     gnome-search-yafti \
     rom-properties-gtk4 \
-    rom-properties-localsearch3 \
     ibus-mozc \
     openssh-askpass \
     firewall-config

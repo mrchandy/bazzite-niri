@@ -184,7 +184,7 @@ assign_chunk ublue-docs quarterly /usr/share/ublue-os/docs
 assign_chunk extest quarterly /usr/{lib,lib64}/extest/libextest.so
 assign_chunk winetricks yearly /usr/bin/winetricks
 
-assign_chunk steam-bootstrap yearly /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz
+assign_chunk steam-bootstrap yearly /usr/share/gamescope-session-plus/bootstrap_steam.tar.zst
 
 assign_chunk bazzite-init monthly \
     /usr/libexec/bazzite-* \
@@ -192,7 +192,6 @@ assign_chunk bazzite-init monthly \
     /usr/share/bazzite-cli \
     /usr/bin/bazzite-* \
     /usr/bin/cec-control \
-    /usr/bin/startplasma-steamos-oneshot \
     /usr/lib/systemd/system/bazzite-{flatpak-manager,hardware-setup,iwd-migration,libvirtd-setup}.service \
     /usr/lib/systemd/user/bazzite-{dynamic-fixes,user-setup}.service \
     /usr/share/polkit-1/actions/org.bazzite.privileged.user.setup.policy \
@@ -220,7 +219,6 @@ assign_chunk bazzite-hardware-config monthly \
     /etc/modprobe.d/{deck-blacklist,default-disable-broadcom-wl}.conf \
     /etc/modules-load.d/hid-steaminput-preload.conf \
     /usr/lib/modprobe.d/{fw-charge-control,mt7921,new-lg4ff}.conf \
-    /usr/lib/modules-load.d/wine-ntsync.conf \
     /usr/lib/systemd/system/cec-{onboot,onpoweroff,onsleep}.service \
     /usr/lib/systemd/system/kmod-sleep-workaround@.service \
     /usr/lib/udev/hwdb.d/60-keyboard.hwdb \
@@ -232,7 +230,6 @@ assign_chunk bazzite-hardware-config monthly \
 assign_chunk bazzite-desktop-config quarterly \
     /etc/dconf/db/distro.d/*bazzite* \
     /etc/dconf/db/distro.d/locks/*bazzite* \
-    /etc/polkit-1/rules.d/50-efibootmgr.rules \
     /etc/skel/.config/gnome-initial-setup-done \
     /etc/skel/.config/gtk-4.0/{gtk,kde_window_geometry}.css \
     /etc/skel/.config/kcminputrc \
@@ -285,8 +282,6 @@ assign_chunk bazzite-gaming-config quarterly \
     /usr/share/applications/bazzite-steam-bpm.desktop
 
 assign_chunk bazzite-gamescope-session monthly \
-    /etc/dbus-1/system.d/org.opengamingcollective.cardwire.bazzite.conf \
-    /etc/default/steam-hardware-control \
     /etc/sddm.conf.d/virtualkbd.conf \
     /etc/systemd/logind.conf.d/deck.conf \
     /etc/xdg/autostart/bazzite-desktop-bootstrap.desktop \
@@ -296,7 +291,6 @@ assign_chunk bazzite-gamescope-session monthly \
     /usr/lib/systemd/system/{ac,battery}.target \
     /usr/lib/systemd/system/bazzite-autologin.service \
     /usr/lib/systemd/system/steam-web-debug-portforward.{service,socket} \
-    /usr/lib/systemd/user/bazzite-native-steam-input.service \
     /usr/libexec/os-session-select \
     /usr/share/applications/gamescope.desktop \
     /usr/share/gamescope/scripts/00-gamescope/displays/gpd.win4.lcd.lua \
@@ -309,10 +303,9 @@ assign_chunk bazzite-audio-config quarterly \
     /usr/share/alsa/ucm2/codecs/tas2783/init.conf \
     /usr/share/alsa/ucm2/sof-soundwire/tas2783.conf \
     /usr/share/alsa/ucm2/USB-Audio/Sony/DualSense-PS5.conf \
-    /usr/share/wireplumber/wireplumber.conf.d/{alsa-card0,alsa-card1,alsa-ps-controller,bluez}.conf
+    /usr/share/wireplumber/wireplumber.conf.d/{51-disable-suspension,alsa-card0,alsa-card1,alsa-ps-controller,bluez}.conf
 
 assign_chunk bazzite-power-config quarterly \
-    /etc/scx_loader/config.toml \
     /usr/lib/tuned/profiles/{balanced,balanced-battery,powersave,powersave-battery,throughput-performance}-bazzite
 
 assign_chunk bazzite-network-config quarterly \

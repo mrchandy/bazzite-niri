@@ -21,13 +21,18 @@ dnf5 -y install \
 # -- Install core packages from Terra repo --
 # Install hardware support, input tools, language packs, and utilities.
 echo "==> Installing core packages from Terra repo..."
+inputplumber_package="inputplumber"
+case "${IMAGE_BRANCH}" in
+    unstable) inputplumber_package="inputplumber-nightly" ;;
+esac
+
 dnf5 -y install \
     jupiter-fan-control \
     jupiter-hw-support-btrfs \
     galileo-mura \
     steamdeck-dsp \
     powerbuttond \
-    inputplumber \
+    "${inputplumber_package}" \
     hid-replay \
     gamescope-session-ogui-steam \
     steamos-manager-powerstation \
@@ -66,7 +71,7 @@ sed -i 's/LOG_LEVEL=info/LOG_LEVEL=debug/g' /usr/lib/systemd/system/inputplumber
 # Keep HOME literal for expansion when the session starts.
 # shellcheck disable=SC2016
 sed -i \
-    -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE="/usr/share/gamescope-session-plus/bootstrap_steam.tar.gz"|' \
+    -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_ARCHIVE="/usr/share/gamescope-session-plus/bootstrap_steam.tar.zst"|' \
     -e 's|^export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_DIR=.*$|export GAMESCOPE_SESSION_STEAM_BOOTSTRAP_DIR="${HOME}/.local/share"|' \
     /usr/share/gamescope-session-plus/sessions.d/steam
 
