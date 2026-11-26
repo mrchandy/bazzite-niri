@@ -16,6 +16,12 @@ echo "==> Configuring desktop autostart..."
 mkdir -p "/etc/xdg/autostart"
 mv "/etc/skel/.config/autostart/steam.desktop" "/etc/xdg/autostart/steam.desktop"
 
+if [[ "${BASE_IMAGE_NAME}" == "silverblue" ]]; then
+    desktop-file-edit --set-key=Exec \
+        --set-value='/usr/bin/sh -c "sleep 5; exec /usr/bin/bazzite-steam -silent"' \
+        /etc/xdg/autostart/steam.desktop
+fi
+
 # -- Configure Waydroid desktop entry --
 # Update Waydroid launch command and add Steam library metadata.
 echo "==> Configuring Waydroid desktop entry..."
